@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using NLog;
+using Org.Apache.Java.Types;
 
 namespace Org.Apache.CuratorNet.Client.Retry
 {

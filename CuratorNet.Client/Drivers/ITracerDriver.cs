@@ -1,4 +1,5 @@
 ﻿using System;
+using Org.Apache.Java.Types;
 
 namespace Org.Apache.CuratorNet.Client.Drivers
 {

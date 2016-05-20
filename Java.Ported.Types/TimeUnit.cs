@@ -1,4 +1,4 @@
-﻿namespace Org.Apache.CuratorNet.Client
+﻿namespace Org.Apache.Java.Types
 {
   public enum TimeUnit
     {

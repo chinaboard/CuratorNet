@@ -1,4 +1,6 @@
-﻿namespace Org.Apache.CuratorNet.Client
+﻿using Org.Apache.Java.Types;
+
+namespace Org.Apache.CuratorNet.Client
 {
     /**
      * Abstraction for retry policies to sleep
