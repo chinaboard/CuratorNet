@@ -34,6 +34,16 @@ namespace Org.Apache.Java.Types.Concurrent.Atomics
             return Interlocked.CompareExchange(ref _value, update, expect);
         }
 
+        public int IncrementAndGet()
+        {
+            return Interlocked.Increment(ref _value);
+        }
+
+        public int DecrementAndGet()
+        {
+            return Interlocked.Decrement(ref _value);
+        }
+
         public int Get()
         {
             return _value;
