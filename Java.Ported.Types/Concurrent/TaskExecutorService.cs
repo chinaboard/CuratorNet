@@ -23,21 +23,9 @@ namespace Org.Apache.Java.Types.Concurrent
             _taskFactory = factory;
         }
 
-        public IFuture<T> submit<T>(Func<T> task) where T : class
-        {
-            Task<T> runnedTask = _taskFactory.StartNew(task);
-            return new FutureTask<T>(runnedTask);
-        }
-
-        public IFuture<object> submit(Action task)
-        {
-            Task runnedTask = _taskFactory.StartNew(task);
-            return new ActionFuture(runnedTask);
-        }
-
         public IFuture<T> submit<T>(FutureTask<T> task)
         {
-            task.run();
+            _taskFactory.StartNew(task.run, task.CancelToken.Token);
             return task;
         }
     }

@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CuratorNet.Client", "..\CuratorNet.Client\CuratorNet.Client.csproj", "{0216ECEC-4872-46FE-B37A-D67E65BC5A65}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CuratorNet.Client", "CuratorNet.Client\CuratorNet.Client.csproj", "{0216ECEC-4872-46FE-B37A-D67E65BC5A65}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Java.Ported.Types", "..\Java.Ported.Types\Java.Ported.Types.csproj", "{7E458CAB-585F-4984-B903-93A6FBCE9824}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Java.Ported.Types", "Java.Ported.Types\Java.Ported.Types.csproj", "{7E458CAB-585F-4984-B903-93A6FBCE9824}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

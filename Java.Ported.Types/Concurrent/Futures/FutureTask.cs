@@ -1,75 +1,9 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Org.Apache.Java.Types.Concurrent.Futures;
 
 namespace Org.Apache.Java.Types.Concurrent.Futures
 {
-    //    public class FutureTask<T> : IFuture<T>
-    //    {
-    //        protected readonly Task<T> Task;
-    //
-    //        public FutureTask(Task<T> task)
-    //        {
-    //            if (task == null)
-    //            {
-    //                throw new ArgumentNullException(nameof(task));
-    //            }
-    //            Task = task;
-    //        }
-    //
-    //        public virtual void run()
-    //        {
-    //            if (Task.Status != TaskStatus.Created)
-    //            {
-    //                return;
-    //            }
-    //            Task.Start();
-    //        }
-    //
-    //        public virtual bool cancel()
-    //        {
-    //            return false;
-    //        }
-    //
-    //        public virtual T get()
-    //        {
-    //            Task.Wait();
-    //            return Task.Result;
-    //        }
-    //
-    //        public virtual T get(int timeoutMs)
-    //        {
-    //            Task.Wait(timeoutMs);
-    //            return Task.Result;
-    //        }
-    //
-    //        public virtual bool isCancelled()
-    //        {
-    //            return Task.IsCanceled;
-    //        }
-    //
-    //        public virtual bool isDone()
-    //        {
-    //            return Task.IsCompleted;
-    //        }
-    //    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     public class FutureTask<T> : IRunnableFuture<T> {
 
         /**
@@ -101,8 +35,9 @@ namespace Org.Apache.Java.Types.Concurrent.Futures
         private ICallable<T> callable;
         /** The result to return or exception to throw from get() */
         private Object outcome; // non-volatile, protected by state reads/writes
-        /** The thread running the callable; CASed during run() */
-        private volatile Thread runner;
+
+        public readonly CancellationTokenSource CancelToken = new CancellationTokenSource();
+
         /** Treiber stack of waiting threads */
         private volatile WaitNode waiters;
 
@@ -115,10 +50,14 @@ namespace Org.Apache.Java.Types.Concurrent.Futures
         {
             Object x = outcome;
             if (s == NORMAL)
+            {
                 return (T)x;
+            }
             if (s >= CANCELLED)
+            {
                 throw new TaskCanceledException();
-            throw new InvalidOperationException((Throwable)x);
+            }
+            throw new InvalidOperationException("",(Exception)x);
         }
 
         /**
@@ -166,31 +105,18 @@ namespace Org.Apache.Java.Types.Concurrent.Futures
             return state != NEW;
         }
 
-        public bool cancel(bool mayInterruptIfRunning)
+        public bool cancel()
         {
-            int newState = mayInterruptIfRunning 
-                            ? INTERRUPTING 
-                            : CANCELLED;
             if (!(state == NEW &&
-                    Interlocked.CompareExchange(ref state, newState, NEW) == NEW))
+                    Interlocked.CompareExchange(ref state, CANCELLED, NEW) == NEW))
             {
                 return false;
             }
             try
-            {    // in case call to interrupt throws exception
-                if (mayInterruptIfRunning)
-                {
-                    try
-                    {
-                        Thread t = runner;
-                        if (t != null)
-                            t.interrupt();
-                    }
-                    finally
-                    { // final state
-                        UNSAFE.putOrderedInt(this, stateOffset, INTERRUPTED);
-                    }
-                }
+            {
+                CancelToken.Cancel();
+                // final state
+                Interlocked.Exchange(ref state, INTERRUPTED);
             }
             finally
             {
@@ -206,22 +132,20 @@ namespace Org.Apache.Java.Types.Concurrent.Futures
         {
             int s = state;
             if (s <= COMPLETING)
-                s = awaitDone(false, 0L);
+            {
+                s = awaitDone(false, 0);
+            }
             return report(s);
         }
 
         /**
          * @throws CancellationException {@inheritDoc}
          */
-        public T get(long timeout, TimeUnit unit)
+        public T get(int timeoutMs)
         {
-            if (unit == null)
-            {
-                throw new ArgumentNullException(nameof(unit));
-            }
             int s = state;
             if (s <= COMPLETING &&
-                (s = awaitDone(true, unit.toNanos(timeout))) <= COMPLETING)
+                (s = awaitDone(true, timeoutMs)) <= COMPLETING)
             {
                 throw new TimeoutException();
             }
@@ -280,8 +204,7 @@ namespace Org.Apache.Java.Types.Concurrent.Futures
 
         public void run()
         {
-            if (state != NEW 
-                    || Interlocked.CompareExchange(ref runner, Thread.CurrentThread,null) != null)
+            if (state != NEW)
             {
                 return;
             }
@@ -304,16 +227,14 @@ namespace Org.Apache.Java.Types.Concurrent.Futures
                         setException(ex);
                     }
                     if (ran)
+                    {
                         set(result);
+                    }
                 }
             }
             finally
             {
-                // runner must be non-null until state is settled to
-                // prevent concurrent calls to run()
-                runner = null;
-                // state must be re-read after nulling runner to prevent
-                // leaked interrupts
+                // read volatile field into local var to prevent two volatile reads
                 int s = state;
                 if (s >= INTERRUPTING)
                     handlePossibleCancellationInterrupt(s);
@@ -331,8 +252,7 @@ namespace Org.Apache.Java.Types.Concurrent.Futures
          */
         protected bool runAndReset()
         {
-            if (state != NEW ||
-                Interlocked.CompareExchange(ref runner, Thread.currentThread(),null) != null)
+            if (state != NEW)
             {
                 return false;
             }
@@ -356,11 +276,7 @@ namespace Org.Apache.Java.Types.Concurrent.Futures
             }
             finally
             {
-                // runner must be non-null until state is settled to
-                // prevent concurrent calls to run()
-                runner = null;
-                // state must be re-read after nulling runner to prevent
-                // leaked interrupts
+                // read volatile field into local var to prevent two volatile reads
                 s = state;
                 if (s >= INTERRUPTING)
                     handlePossibleCancellationInterrupt(s);
@@ -400,11 +316,11 @@ namespace Org.Apache.Java.Types.Concurrent.Futures
          * stack.  See other classes such as Phaser and SynchronousQueue
          * for more detailed explanation.
          */
-        static final class WaitNode
+        private sealed class WaitNode
         {
-            volatile Thread thread;
-            volatile WaitNode next;
-            WaitNode() { thread = Thread.currentThread(); }
+            internal volatile Thread Thread;
+            internal volatile WaitNode Next;
+            internal WaitNode() { Thread = Thread.CurrentThread; }
         }
 
         /**
@@ -420,16 +336,17 @@ namespace Org.Apache.Java.Types.Concurrent.Futures
                 {
                     for (;;)
                     {
-                        Thread t = q.thread;
+                        Thread t = q.Thread;
                         if (t != null)
                         {
-                            q.thread = null;
-                            LockSupport.unpark(t);
+                            q.Thread = null;
                         }
-                        WaitNode next = q.next;
+                        WaitNode next = q.Next;
                         if (next == null)
+                        {
                             break;
-                        q.next = null; // unlink to help gc
+                        }
+                        q.Next = null; // unlink to help gc
                         q = next;
                     }
                     break;
@@ -448,45 +365,55 @@ namespace Org.Apache.Java.Types.Concurrent.Futures
          * @param nanos time to wait, if timed
          * @return state upon completion
          */
-        private int awaitDone(boolean timed, long nanos)
-                throws InterruptedException
+        private int awaitDone(bool timed, int ms)
         {
-            final long deadline = timed ? System.nanoTime() + nanos : 0L;
+            int deadline = timed ? DateTime.Now.Millisecond + ms : 0;
             WaitNode q = null;
-            boolean queued = false;
+            bool queued = false;
                 for (;;) {
-                if (Thread.interrupted())
-                {
-                    removeWaiter(q);
-                    throw new InterruptedException();
-                }
+//                if (Thread.interrupted())
+//                {
+//                    removeWaiter(q);
+//                    throw new InterruptedException();
+//                }
 
                 int s = state;
                 if (s > COMPLETING)
                 {
                     if (q != null)
-                        q.thread = null;
+                    {
+                        q.Thread = null;
+                    }
                     return s;
                 }
                 else if (s == COMPLETING) // cannot time out yet
-                    Thread.yield();
+                {
+                    Thread.Yield();
+                }
                 else if (q == null)
+                {
                     q = new WaitNode();
+                }
                 else if (!queued)
-                    queued = UNSAFE.compareAndSwapObject(this, waitersOffset,
-                                                         q.next = waiters, q);
+                {
+                    q.Next = waiters;
+                    queued = Interlocked.CompareExchange(ref waiters, q, q.Next) == q.Next;
+                }
                 else if (timed)
                 {
-                    nanos = deadline - System.nanoTime();
-                    if (nanos <= 0L)
+                    ms = deadline - DateTime.Now.Millisecond;
+                    if (ms <= 0)
                     {
                         removeWaiter(q);
                         return state;
                     }
-                    LockSupport.parkNanos(this, nanos);
+                    Thread.Sleep(ms);
                 }
                 else
-                    LockSupport.park(this);
+                {
+                    Thread.Yield();
+//                    LockSupport.park(this);
+                }
             }
         }
 
@@ -504,49 +431,41 @@ namespace Org.Apache.Java.Types.Concurrent.Futures
         {
             if (node != null)
             {
-                node.thread = null;
-                retry:
+                node.Thread = null;
+                bool needRetry = false;
                 for (;;)
-                {          // restart on removeWaiter race
+                {          
+                    // restart on removeWaiter race
                     for (WaitNode pred = null, q = waiters, s; q != null; q = s)
                     {
-                        s = q.next;
-                        if (q.thread != null)
+                        s = q.Next;
+                        if (q.Thread != null)
+                        {
                             pred = q;
+                        }
                         else if (pred != null)
                         {
-                            pred.next = s;
-                            if (pred.thread == null) // check for race
-                                continue retry;
+                            pred.Next = s;
+                            if (pred.Thread == null) // check for race
+                            {
+                                needRetry = true;
+                                break;
+                            }
                         }
-                        else if (!UNSAFE.compareAndSwapObject(this, waitersOffset,
-                                                              q, s))
-                            continue retry;
+                        else if (Interlocked.CompareExchange(ref waiters, s, q) != q)
+                        {
+                            needRetry = true;
+                            break;
+                        }
+                    }
+                    if (needRetry)
+                    {
+                        needRetry = false;
+                        continue;
                     }
                     break;
                 }
             }
         }
-
-        // Unsafe mechanics
-        private static final sun.misc.Unsafe UNSAFE;
-        private static final long stateOffset;
-        private static final long runnerOffset;
-        private static final long waitersOffset;
-        static {
-                try {
-                    UNSAFE = sun.misc.Unsafe.getUnsafe();
-                    Class<?> k = FutureTask<>.class;
-        stateOffset = UNSAFE.objectFieldOffset
-                        (k.getDeclaredField("state"));
-                    runnerOffset = UNSAFE.objectFieldOffset
-                        (k.getDeclaredField("runner"));
-                    waitersOffset = UNSAFE.objectFieldOffset
-                        (k.getDeclaredField("waiters"));
-                } catch (Exception e) {
-                    throw new Error(e);
-                }
-            }
-
-        }
+    }
 }

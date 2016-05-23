@@ -1,7 +1,6 @@
 ﻿using NLog;
 using System;
 using System.Collections.Concurrent;
-using System.Threading.Tasks;
 using Org.Apache.Java.Types.Concurrent;
 using Org.Apache.Java.Types.Concurrent.Atomics;
 using Org.Apache.Java.Types.Concurrent.Futures;
@@ -12,43 +11,42 @@ namespace Org.Apache.CuratorNet.Client.Utils
      * Decoration on an ExecutorService that tracks created futures and provides
      * a method to close futures created via this class
      */
-    public class CloseableExecutorService : IExecutorService, IDisposable
+    public class CloseableExecutorService : IDisposable
     {
         private static readonly Logger log = LogManager.GetCurrentClassLogger();
         private readonly ConcurrentDictionary<IFuture<object>, IFuture<object>> futures 
             = new ConcurrentDictionary<IFuture<object>, IFuture<object>>();
         private readonly IExecutorService executorService;
-        private readonly bool shutdownOnClose;
         protected readonly AtomicBoolean isOpen = new AtomicBoolean(true);
 
         protected class InternalScheduledFutureTask : IFuture<object>
         {
             private readonly CloseableExecutorService _executorService;
-            private readonly IScheduledFuture<object> scheduledFuture;
+            private readonly IScheduledFuture<object> _scheduledFuture;
 
             public InternalScheduledFutureTask(CloseableExecutorService executorService, 
                                                 IScheduledFuture<object> scheduledFuture)
             {
                 _executorService = executorService;
-                this.scheduledFuture = scheduledFuture;
+                _scheduledFuture = scheduledFuture;
                 executorService.futures.TryAdd(scheduledFuture, scheduledFuture);
             }
 
             public bool cancel()
             {
                 IFuture<object> value;
-                _executorService.futures.TryRemove(scheduledFuture,out value);
-                return scheduledFuture.cancel();
+                _executorService.futures.TryRemove(_scheduledFuture,out value);
+                return _scheduledFuture.cancel();
             }
 
             public bool isCancelled()
             {
-                return scheduledFuture.isCancelled();
+                return _scheduledFuture.isCancelled();
             }
 
             public bool isDone()
             {
-                return scheduledFuture.isDone();
+                return _scheduledFuture.isDone();
             }
 
             public object get()
@@ -65,41 +63,34 @@ namespace Org.Apache.CuratorNet.Client.Utils
         protected class InternalFutureTask<T> : FutureTask<T> where T : class
         {
             private readonly CloseableExecutorService _executorService;
+            private readonly IRunnableFuture<T> _task;
 
-            internal InternalFutureTask(CloseableExecutorService executorService, Task<T> task) 
+            internal InternalFutureTask(CloseableExecutorService executorService, IRunnableFuture<T> task) 
                 : base(task)
             {
                 _executorService = executorService;
-                var futureTask = new FutureTask<T>(task);
-                _executorService.futures.TryAdd(futureTask, futureTask);
-                task.ContinueWith(mainTask =>
-                {
-                    IFuture<object> value;
-                    _executorService.futures.TryRemove(futureTask, out value);
-                });
+                _task = task;
+                _executorService.futures.TryAdd(task, task);
+            }
+
+            protected override void done()
+            {
+                IFuture<object> value;
+                _executorService.futures.TryRemove(_task, out value);
             }
         }
-
-        /**
-         * @param executorService the service to decorate
-         */
-        public CloseableExecutorService(IExecutorService executorService) 
-            : this(executorService, false)
-        {
-        }
-
+        
         /**
          * @param executorService the service to decorate
          * @param shutdownOnClose if true, shutdown the executor service when this is closed
          */
-        public CloseableExecutorService(IExecutorService executorService, bool shutdownOnClose)
+        public CloseableExecutorService(IExecutorService executorService)
         {
             if (executorService == null)
             {
                 throw new ArgumentNullException(nameof(executorService));
             }
             this.executorService = executorService;
-            this.shutdownOnClose = shutdownOnClose;
         }
 
         /**
@@ -135,22 +126,25 @@ namespace Org.Apache.CuratorNet.Client.Utils
             }
         }
 
-//        public IFuture<T> submit<T>(Func<T> task) where T : class
-//        {
-//            if (!isOpen.get())
-//            {
-//                throw new InvalidOperationException("CloseableExecutorService is closed");
-//            }
-//            return executorService.submit(task);
-//        }
-//
-//        public IFuture<object> submit(Action task)
-//        {
-//            if (!isOpen.get())
-//            {
-//                throw new InvalidOperationException("CloseableExecutorService is closed");
-//            }
-//            return executorService.submit(task);
-//        }
+        public IFuture<T> submit<T>(ICallable<T> task) where T : class
+        {
+            if (!isOpen.get())
+            {
+                throw new InvalidOperationException("CloseableExecutorService is closed");
+            }
+            InternalFutureTask<T> futureTask = new InternalFutureTask<T>(this, new FutureTask<T>(task));
+            return executorService.submit(futureTask);
+        }
+
+        public IFuture<object> submit(IRunnable task)
+        {
+            if (!isOpen.get())
+            {
+                throw new InvalidOperationException("CloseableExecutorService is closed");
+            }
+            InternalFutureTask<object> futureTask 
+                = new InternalFutureTask<object>(this, new FutureTask<object>(task));
+            return executorService.submit(futureTask);
+        }
     }    
 }
