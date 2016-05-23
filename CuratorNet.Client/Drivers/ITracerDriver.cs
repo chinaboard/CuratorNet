@@ -1,11 +1,10 @@
 ﻿using System;
-using Org.Apache.Java.Types;
 
 namespace Org.Apache.CuratorNet.Client.Drivers
 {
     interface ITracerDriver
     {
-        void addTrace(String name, long time, TimeUnit unit);
+        void addTrace(String name, int timeMs);
 
         /**
          * Add to a named counter

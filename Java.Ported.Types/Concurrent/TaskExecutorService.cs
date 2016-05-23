@@ -6,12 +6,12 @@ namespace Org.Apache.Java.Types.Concurrent
 {
     public class TaskExecutorService : IExecutorService
     {
-        private readonly TaskFactory _taskFactory;
+        protected readonly TaskFactory TaskFactory;
 
         public TaskExecutorService()
         {
             var taskScheduler = TaskScheduler.Current;
-            _taskFactory = new TaskFactory(taskScheduler);
+            TaskFactory = new TaskFactory(taskScheduler);
         }
 
         public TaskExecutorService(TaskFactory factory)
@@ -20,12 +20,12 @@ namespace Org.Apache.Java.Types.Concurrent
             {
                 throw new ArgumentNullException(nameof(factory));
             }
-            _taskFactory = factory;
+            TaskFactory = factory;
         }
 
         public IFuture<T> submit<T>(FutureTask<T> task)
         {
-            _taskFactory.StartNew(task.run, task.CancelToken.Token);
+            TaskFactory.StartNew(task.run, task.CancelToken.Token);
             return task;
         }
     }

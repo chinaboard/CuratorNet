@@ -60,6 +60,16 @@
     <Compile Include="Retry\BoundedExponentialBackoffRetry.cs" />
     <Compile Include="Retry\ExponentialBackoffRetry.cs" />
     <Compile Include="Utils\CloseableExecutorService.cs" />
+    <Compile Include="Utils\CloseableScheduledExecutorService.cs" />
+    <Compile Include="Utils\DebugUtils.cs" />
+    <Compile Include="Utils\CloseableUtils.cs" />
+    <Compile Include="Utils\DefaultTracerDriver.cs" />
+    <Compile Include="Utils\DefaultZookeeperFactory.cs" />
+    <Compile Include="Utils\EnsurePath.cs" />
+    <Compile Include="Utils\IInternalACLProvider.cs" />
+    <Compile Include="Utils\PathUtils.cs" />
+    <Compile Include="Utils\ThreadUtils.cs" />
+    <Compile Include="Utils\ZookeeperFactory.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

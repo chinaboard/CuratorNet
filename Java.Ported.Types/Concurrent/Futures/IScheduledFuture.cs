@@ -10,6 +10,6 @@
          * @return the remaining delay; zero or negative values indicate
          * that the delay has already elapsed
          */
-        long getDelay(TimeUnit unit);
+        long getDelayMs();
     }
 }

@@ -16,16 +16,16 @@ namespace Org.Apache.CuratorNet.Client.Utils
         private static readonly Logger log = LogManager.GetCurrentClassLogger();
         private readonly ConcurrentDictionary<IFuture<object>, IFuture<object>> futures 
             = new ConcurrentDictionary<IFuture<object>, IFuture<object>>();
-        private readonly IExecutorService executorService;
+        private readonly IExecutorService execService;
         protected readonly AtomicBoolean isOpen = new AtomicBoolean(true);
 
         protected class InternalScheduledFutureTask : IFuture<object>
         {
             private readonly CloseableExecutorService _executorService;
-            private readonly IScheduledFuture<object> _scheduledFuture;
+            private readonly IFuture<object> _scheduledFuture;
 
             public InternalScheduledFutureTask(CloseableExecutorService executorService, 
-                                                IScheduledFuture<object> scheduledFuture)
+                                                IFuture<object> scheduledFuture)
             {
                 _executorService = executorService;
                 _scheduledFuture = scheduledFuture;
@@ -84,13 +84,13 @@ namespace Org.Apache.CuratorNet.Client.Utils
          * @param executorService the service to decorate
          * @param shutdownOnClose if true, shutdown the executor service when this is closed
          */
-        public CloseableExecutorService(IExecutorService executorService)
+        public CloseableExecutorService(IExecutorService execService)
         {
-            if (executorService == null)
+            if (execService == null)
             {
-                throw new ArgumentNullException(nameof(executorService));
+                throw new ArgumentNullException(nameof(execService));
             }
-            this.executorService = executorService;
+            this.execService = execService;
         }
 
         /**
@@ -133,7 +133,7 @@ namespace Org.Apache.CuratorNet.Client.Utils
                 throw new InvalidOperationException("CloseableExecutorService is closed");
             }
             InternalFutureTask<T> futureTask = new InternalFutureTask<T>(this, new FutureTask<T>(task));
-            return executorService.submit(futureTask);
+            return execService.submit(futureTask);
         }
 
         public IFuture<object> submit(IRunnable task)
@@ -144,7 +144,7 @@ namespace Org.Apache.CuratorNet.Client.Utils
             }
             InternalFutureTask<object> futureTask 
                 = new InternalFutureTask<object>(this, new FutureTask<object>(task));
-            return executorService.submit(futureTask);
+            return execService.submit(futureTask);
         }
     }    
 }
