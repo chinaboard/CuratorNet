@@ -2,9 +2,9 @@
 
 namespace Org.Apache.CuratorNet.Client.Drivers
 {
-    interface ITracerDriver
+    public interface ITracerDriver
     {
-        void addTrace(String name, int timeMs);
+        void addTrace(string name, long timeMs);
 
         /**
          * Add to a named counter

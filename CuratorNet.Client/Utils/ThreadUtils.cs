@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Threading;
 using NLog;
-using Org.Apache.Java.Types;
+using Org.Apache.Java.Types.Concurrent;
 
 namespace Org.Apache.CuratorNet.Client.Utils
 {
@@ -17,56 +16,29 @@ namespace Org.Apache.CuratorNet.Client.Utils
 //            }
         }
 
-        public static ExecutorService newSingleThreadExecutor(String processName)
+        public static IExecutorService newSingleThreadExecutor(String processName)
         {
-            return Executors.newSingleThreadExecutor(newThreadFactory(processName));
+            return new LimitedTaskExecutorService(1);
         }
 
-        public static ExecutorService newFixedThreadPool(int qty, String processName)
+        public static IExecutorService newFixedThreadPool(int qty, String processName)
         {
-            return Executors.newFixedThreadPool(qty, newThreadFactory(processName));
+            return new LimitedTaskExecutorService(qty);
         }
 
-        public static ScheduledExecutorService newSingleThreadScheduledExecutor(String processName)
+        public static IScheduledExecutorService newSingleThreadScheduledExecutor(String processName)
         {
-            return Executors.newSingleThreadScheduledExecutor(newThreadFactory(processName));
+            return new LimitedTaskExecutorService(1);
         }
 
-        public static ScheduledExecutorService newFixedThreadScheduledPool(int qty, String processName)
+        public static IScheduledExecutorService newFixedThreadScheduledPool(int qty, String processName)
         {
-            return Executors.newScheduledThreadPool(qty, newThreadFactory(processName));
+            return new LimitedTaskExecutorService(qty);
         }
 
-        public static ThreadFactory newThreadFactory(String processName)
+        public static String getProcessName(Type clazz)
         {
-            return newGenericThreadFactory("Curator-" + processName);
+            return clazz.FullName;
         }
-
-        public static ThreadFactory newGenericThreadFactory(String processName)
-        {
-            Thread.UncaughtExceptionHandler uncaughtExceptionHandler = new Thread.UncaughtExceptionHandler()
-        {
-            @Override
-            public void uncaughtException(Thread t, Throwable e)
-        {
-            log.error("Unexpected exception in thread: " + t, e);
-            Throwables.propagate(e);
-        }
-    };
-        return new ThreadFactoryBuilder()
-            .setNameFormat(processName + "-%d")
-            .setDaemon(true)
-            .setUncaughtExceptionHandler(uncaughtExceptionHandler)
-            .build();
-}
-
-public static String getProcessName(Class<?> clazz)
-{
-    if (clazz.isAnonymousClass())
-    {
-        return getProcessName(clazz.getEnclosingClass());
     }
-    return clazz.getSimpleName();
-}
-}
 }

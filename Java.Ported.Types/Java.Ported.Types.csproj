@@ -41,6 +41,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Concurrent\Atomics\AtomicBoolean.cs" />
+    <Compile Include="Concurrent\Atomics\AtomicLong.cs" />
+    <Compile Include="Concurrent\Atomics\AtomicReference.cs" />
     <Compile Include="Concurrent\Atomics\AtomicInteger.cs" />
     <Compile Include="Concurrent\Futures\ActionFuture.cs" />
     <Compile Include="Concurrent\Futures\IFuture.cs" />
@@ -50,11 +52,13 @@
     <Compile Include="Concurrent\IExecutorService.cs" />
     <Compile Include="Concurrent\IRunnable.cs" />
     <Compile Include="Concurrent\IRunnableFuture.cs" />
+    <Compile Include="Concurrent\IScheduledExecutorService.cs" />
     <Compile Include="Concurrent\RunnableCallable.cs" />
     <Compile Include="Concurrent\LimitedTaskExecutorService.cs" />
     <Compile Include="Concurrent\TaskExecutorService.cs" />
+    <Compile Include="Concurrent\ExecutorServiceBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ScheduledExecutorService.cs" />
+    <Compile Include="Concurrent\ScheduledExecutorService.cs" />
     <Compile Include="TimeUnit.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Org.Apache.Java.Types.Concurrent.Atomics;
 
 namespace Org.Apache.CuratorNet.Client.Utils
 {
@@ -41,7 +38,7 @@ namespace Org.Apache.CuratorNet.Client.Utils
 
         private static readonly Helper doNothingHelper = new NoopHelper();
 
-        interface Helper
+        internal interface Helper
         {
             void ensure(CuratorZookeeperClient client, string path, bool makeLastNode);
         }

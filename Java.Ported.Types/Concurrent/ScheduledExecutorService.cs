@@ -1,10 +1,9 @@
 ﻿using System.Threading;
-using Org.Apache.Java.Types.Concurrent;
 using Org.Apache.Java.Types.Concurrent.Futures;
 
-namespace Org.Apache.Java.Types
+namespace Org.Apache.Java.Types.Concurrent
 {
-    public class ScheduledExecutorService : TaskExecutorService
+    public class ScheduledExecutorService : TaskExecutorService, IScheduledExecutorService
     {
         /// <summary>
         /// Creates and executes a one-shot action that becomes enabled after the given delay.
@@ -12,7 +11,7 @@ namespace Org.Apache.Java.Types
         /// <param name="command">the task to execute</param>
         /// <param name="delayMs">the time from now to delay execution</param>
         /// <returns>a Future representing pending completion of the task</returns>
-        public IFuture<T> schedule<T>(FutureTask<T> command, int delayMs)
+        public IFuture<object> schedule(FutureTask<object> command, int delayMs)
         {
             TaskFactory.StartNew(() =>
             {
@@ -36,9 +35,9 @@ namespace Org.Apache.Java.Types
         /// <param name="initialDelayMs">the time to delay first execution</param>
         /// <param name="delayMs">the delay between the termination of one</param>
         /// <returns></returns>
-        public IFuture<T> scheduleWithFixedDelay<T>(FutureTask<T> command,
-                                                    int initialDelayMs,
-                                                    int delayMs)
+        public IFuture<object> scheduleWithFixedDelay(FutureTask<object> command,
+                                                        int initialDelayMs,
+                                                        int delayMs)
         {
             TaskFactory.StartNew(() =>
             {

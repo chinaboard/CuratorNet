@@ -7,15 +7,12 @@ using Org.Apache.Java.Types.Concurrent.Futures;
 
 namespace Org.Apache.Java.Types.Concurrent
 {
-    public sealed class LimitedTaskExecutorService : IExecutorService
+    public sealed class LimitedTaskExecutorService : ExecutorServiceBase, IScheduledExecutorService
     {
-        private const int VolatileReadThreshold = 20;
         private readonly int _maxTasks;
         private readonly AtomicInteger _curTasksCount = new AtomicInteger();
         private readonly ConcurrentQueue<Task> _pendingTaskQueue = new ConcurrentQueue<Task>();
         private readonly TaskFactory _taskFactory;
-
-        private volatile bool _disposed = false;
 
         /// <exception cref="ArgumentException"></exception>
         public LimitedTaskExecutorService(int maxTasks)
@@ -37,17 +34,12 @@ namespace Org.Apache.Java.Types.Concurrent
             _taskFactory = factory;
         }
 
-        /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-        /// </summary>
-        public void Dispose()
+        public override IFuture<T> submit<T>(FutureTask<T> task)
         {
-            ThrowIfDisposed();
-            _disposed = true;
-        }
-
-        public IFuture<T> submit<T>(FutureTask<T> task)
-        {
+            if (task == null)
+            {
+                throw new ArgumentNullException(nameof(task));
+            }
             ThrowIfDisposed();
             Task newTask = CreateTask(task);
             //try start task ASAP:
@@ -59,19 +51,23 @@ namespace Org.Apache.Java.Types.Concurrent
             }
             else
             {
+                _pendingTaskQueue.Enqueue(newTask);
                 // we speculatively increment current task count before
                 // and exceed max simultanious tasks => we must decrease 
                 // counter back to original value
-                _curTasksCount.DecrementAndGet();
-                _pendingTaskQueue.Enqueue(newTask);
-                if (_curTasksCount.Get() <= 0)// this is linerization point with TaskCompletedHandler method.
-                                              // If all currently run task finished between counter atomic 
-                                              // increment and task enqueue, then we have to start pending tasks 
-                                              // manually because no task completion handlers see last enqueued value.
-                                              // less than 0 values not expected, but to prevent some unexpected
-                                              // implementation details we support this case
+                int currentTasks = _curTasksCount.DecrementAndGet();// this is linerization point in concurrent execution 
+                                                                    // with TaskCompletedHandler method. This must follow after
+                                                                    // enqueuing of new task.
+                if (currentTasks <= 0 || currentTasks < _maxTasks)  // If all currently run task finished between counter atomic 
+                                                                    // increment and task enqueue, then we have to start pending tasks 
+                                                                    // manually because no task completion handlers see last enqueued value.
+                                                                    // Also we have to consider the case when current run task count less 
+                                                                    // then it maximum value and we have chance to run more tasks 
+                                                                    // right now(this case help to run as more task as possible).
+                                                                    // Less than 0 values not expected, but to prevent some unusual
+                                                                    // implementation details we support this case.
                 {
-                    ForkPending();
+                    TryForkPending();
                 }
             }
             return task;
@@ -80,7 +76,7 @@ namespace Org.Apache.Java.Types.Concurrent
         /// <summary>
         /// Method start pending tasks from pending task queue
         /// </summary>
-        private void ForkPending()
+        private void TryForkPending()
         {
             ThrowIfDisposed();
             Task task;
@@ -99,37 +95,6 @@ namespace Org.Apache.Java.Types.Concurrent
             }
         }
 
-//        private void TaskConsumer()
-//        {
-//            //try reduce expensive volatile reads
-//            bool disposedLocal = _disposed;
-//            int volatileReadThreshold = 0;
-//            int nopExecCount = 0;
-//            while (!disposedLocal)
-//            {
-//                Task task;
-//                if (!_pendingTaskQueue.TryDequeue(out task))
-//                {
-//                    nopExecCount++;
-//                    if (nopExecCount >= 30)
-//                    {
-////                        Thread.Sleep();
-//                    }
-//                    else
-//                    {
-//                        Thread.Yield();
-//                    }
-//                    continue;
-//                }
-//                StartTask(task);
-//                if (volatileReadThreshold >= VolatileReadThreshold)
-//                {
-//                    disposedLocal = _disposed;
-//                    volatileReadThreshold = 0;
-//                }
-//            }
-//        }
-
         private Task CreateTask<T>(FutureTask<T> task)
         {
             return new Task(task.run, task.CancelToken.Token)
@@ -140,7 +105,7 @@ namespace Org.Apache.Java.Types.Concurrent
         {
             _curTasksCount.DecrementAndGet();// this is linerization point with submit() method,
                                              // when it add task to pending queue
-            ForkPending();
+            TryForkPending();
         }
 
         private void StartTask(Task task)
@@ -148,11 +113,85 @@ namespace Org.Apache.Java.Types.Concurrent
             task.Start(_taskFactory.Scheduler);
         }
 
-        private void ThrowIfDisposed()
+        public IFuture<object> schedule(FutureTask<object> command, int delayMs)
         {
-            if (_disposed)
+            if (command == null)
             {
-                throw new ObjectDisposedException("");
+                throw new ArgumentNullException(nameof(command));
+            }
+            if (delayMs <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(delayMs));
+            }
+            var envelopedTask = new FutureTask<object>(new ScheduledRunnable(command, delayMs));
+            submit(envelopedTask);
+            return envelopedTask;
+        }
+
+        public IFuture<object> scheduleWithFixedDelay(FutureTask<object> command, 
+                                                        int initialDelayMs, 
+                                                        int delayMs)
+        {
+            if (command == null)
+            {
+                throw new ArgumentNullException(nameof(command));
+            }
+            if (delayMs <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(delayMs));
+            }
+            if (initialDelayMs <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(initialDelayMs));
+            }
+            var runnable = new RepeatableScheduledRunnable(command, initialDelayMs,delayMs);
+            var envelopedTask = new FutureTask<object>(runnable);
+            submit(envelopedTask);
+            return envelopedTask;
+        }
+
+        private class ScheduledRunnable : IRunnable
+        {
+            private readonly FutureTask<object> _task;
+            private readonly int _delayMs;
+
+            internal ScheduledRunnable(FutureTask<object> task, int delayMs)
+            {
+                _task = task;
+                _delayMs = delayMs;
+            }
+
+            public void run()
+            {
+                Thread.Sleep(_delayMs);
+                _task.run();
+            }
+        }
+
+        private class RepeatableScheduledRunnable : IRunnable
+        {
+            private readonly FutureTask<object> _task;
+            private readonly int _initialDelayMs;
+            private readonly int _delayMs;
+
+            internal RepeatableScheduledRunnable(FutureTask<object> task, 
+                                                    int initialDelayMs, 
+                                                    int delayMs)
+            {
+                _task = task;
+                _initialDelayMs = initialDelayMs;
+                _delayMs = delayMs;
+            }
+
+            public void run()
+            {
+                Thread.Sleep(_initialDelayMs);
+                while (!_task.CancelToken.IsCancellationRequested)
+                {
+                    Thread.Sleep(_delayMs);
+                    _task.run();
+                }
+                _task.cancel();
             }
         }
     }

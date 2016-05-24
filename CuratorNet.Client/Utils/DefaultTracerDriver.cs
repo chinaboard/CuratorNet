@@ -11,7 +11,7 @@ namespace Org.Apache.CuratorNet.Client.Utils
     {
     private readonly Logger _log = LogManager.GetCurrentClassLogger();
 
-    public void addTrace(String name, int timeMs)
+    public void addTrace(string name, long timeMs)
     {
         if (_log.IsTraceEnabled)
         {

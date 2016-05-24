@@ -14,6 +14,6 @@ namespace Org.Apache.CuratorNet.Client
          * @param unit time unit
          * @throws InterruptedException if the sleep is interrupted
          */
-        void sleepFor(long time, TimeUnit unit);
+        void sleepFor(long timeMs);
     }
 }

@@ -4,7 +4,7 @@ using Org.Apache.Java.Types.Concurrent.Futures;
 
 namespace Org.Apache.Java.Types.Concurrent
 {
-    public class TaskExecutorService : IExecutorService
+    public class TaskExecutorService : ExecutorServiceBase
     {
         protected readonly TaskFactory TaskFactory;
 
@@ -23,8 +23,9 @@ namespace Org.Apache.Java.Types.Concurrent
             TaskFactory = factory;
         }
 
-        public IFuture<T> submit<T>(FutureTask<T> task)
+        public override IFuture<T> submit<T>(FutureTask<T> task)
         {
+            ThrowIfDisposed();
             TaskFactory.StartNew(task.run, task.CancelToken.Token);
             return task;
         }

@@ -9,11 +9,6 @@ namespace Org.Apache.Java.Types.Concurrent
     /// <typeparam name="T">The result type returned by this Future's "get" method</typeparam>
     public interface IRunnableFuture<T> : IRunnable, IFuture<T> 
     {
-        /**
-         * Sets this Future to the result of its computation
-         * unless it has been cancelled.
-         */
-        void run();
     }
 
 }
