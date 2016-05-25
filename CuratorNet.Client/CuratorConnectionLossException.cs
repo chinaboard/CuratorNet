@@ -9,7 +9,9 @@ namespace Org.Apache.CuratorNet.Client
      */
     public class CuratorConnectionLossException : ApplicationException
     {
+        public CuratorConnectionLossException(){ }
+
         public CuratorConnectionLossException(KeeperException.ConnectionLossException connectionLossException)
-            :base("",connectionLossException) {}
+            : base("",connectionLossException) {}
     }
 }

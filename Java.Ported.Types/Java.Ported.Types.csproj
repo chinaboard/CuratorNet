@@ -44,6 +44,7 @@
     <Compile Include="Concurrent\Atomics\AtomicLong.cs" />
     <Compile Include="Concurrent\Atomics\AtomicReference.cs" />
     <Compile Include="Concurrent\Atomics\AtomicInteger.cs" />
+    <Compile Include="Concurrent\CallableUtils.cs" />
     <Compile Include="Concurrent\Futures\ActionFuture.cs" />
     <Compile Include="Concurrent\Futures\IFuture.cs" />
     <Compile Include="Concurrent\Futures\FutureTask.cs" />

@@ -17,6 +17,12 @@ namespace Org.Apache.Java.Types.Concurrent.Atomics
             return _value == 1;
         }
 
+        public bool getAndSet(bool value)
+        {
+            int intVal = value ? 1 : 0;
+            return Interlocked.Exchange(ref _value, intVal) == 1;
+        }
+
         public void set(bool value)
         {
             int intVal = value ? 1 : 0;

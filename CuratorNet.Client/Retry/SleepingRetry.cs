@@ -28,7 +28,7 @@ namespace Org.Apache.CuratorNet.Client.Retry
             {
                 try
                 {
-                    sleeper.sleepFor(getSleepTimeMs(retryCount, elapsedTimeMs), TimeUnit.Milliseconds);
+                    sleeper.sleepFor(getSleepTimeMs(retryCount, elapsedTimeMs));
                 }
                 catch (Exception)
                 {

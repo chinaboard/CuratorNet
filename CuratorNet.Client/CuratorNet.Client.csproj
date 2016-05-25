@@ -48,6 +48,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Ensemble\FixedEnsembleProvider.cs" />
+    <Compile Include="Ensemble\IEnsembleProvider.cs" />
     <Compile Include="RetryLoop.cs" />
     <Compile Include="ConnectionState.cs" />
     <Compile Include="CuratorConnectionLossException.cs" />

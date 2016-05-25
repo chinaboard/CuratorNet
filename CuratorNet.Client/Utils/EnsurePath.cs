@@ -1,4 +1,5 @@
 ﻿using System;
+using Org.Apache.Java.Types.Concurrent;
 using Org.Apache.Java.Types.Concurrent.Atomics;
 
 namespace Org.Apache.CuratorNet.Client.Utils
@@ -38,7 +39,7 @@ namespace Org.Apache.CuratorNet.Client.Utils
 
         private static readonly Helper doNothingHelper = new NoopHelper();
 
-        internal interface Helper
+        public interface Helper
         {
             void ensure(CuratorZookeeperClient client, string path, bool makeLastNode);
         }
@@ -53,18 +54,19 @@ namespace Org.Apache.CuratorNet.Client.Utils
         /**
          * @param path the full path to ensure
          */
-        public EnsurePath(String path)
+        public EnsurePath(String path) : this(path, null, true, null)
         {
-            this(path, null, true, null);
+            
         }
 
         /**
          * @param path the full path to ensure
          * @param aclProvider if not null, the ACL provider to use when creating parent nodes
          */
-        public EnsurePath(String path, IInternalACLProvider aclProvider)
+        public EnsurePath(String path, IInternalACLProvider aclProvider) 
+            : this(path, null, true, aclProvider)
         {
-            this(path, null, true, aclProvider);
+            
         }
 
         /**
@@ -76,7 +78,7 @@ namespace Org.Apache.CuratorNet.Client.Utils
          */
         public void ensure(CuratorZookeeperClient client)
         {
-            Helper localHelper = helper.get();
+            Helper localHelper = helper.Get();
             localHelper.ensure(client, path, makeLastNode);
         }
 
@@ -99,9 +101,7 @@ namespace Org.Apache.CuratorNet.Client.Utils
             this.path = path;
             this.makeLastNode = makeLastNode;
             this.aclProvider = aclProvider;
-            this.helper = (helper != null) 
-                                ? helper 
-                                : new AtomicReference<Helper>(new InitialHelper());
+            this.helper = helper ?? new AtomicReference<Helper>(new InitialHelper(this));
         }
 
         /**
@@ -121,7 +121,16 @@ namespace Org.Apache.CuratorNet.Client.Utils
 
         private class InitialHelper : Helper
         {
+            private readonly EnsurePath _ensurePath;
             private bool isSet = false;  // guarded by synchronization
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="T:System.Object"/> class.
+            /// </summary>
+            public InitialHelper(EnsurePath ensurePath)
+            {
+                _ensurePath = ensurePath;
+            }
 
             public void ensure(CuratorZookeeperClient client, 
                                                 string path, 
@@ -132,20 +141,20 @@ namespace Org.Apache.CuratorNet.Client.Utils
                     if ( !isSet )
                     {
                         RetryLoop.callWithRetry
-                            (
+                        (
                              client,
-                             new Callable<Object>()
+                             CallableUtils.FromFunc<object>(() =>
                              {
-                                 @Override
-                             public Object call() throws Exception
-                                 {
-                                 ZKPaths.mkdirs(client.getZooKeeper(), path, makeLastNode, aclProvider, asContainers());
-                                 helper.set(doNothingHelper);
+                                 ZKPaths.mkdirs(client.getZooKeeper(), 
+                                                    path, 
+                                                    makeLastNode,
+                                                    _ensurePath.aclProvider,
+                                                    _ensurePath.asContainers());
+                                 _ensurePath.helper.Set(doNothingHelper);
                                  isSet = true;
                                  return null;
-                             }
-                    }
-                    );
+                             })
+                        );
                     }
                 }
             }

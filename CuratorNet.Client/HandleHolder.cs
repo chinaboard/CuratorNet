@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using org.apache.zookeeper;
+using Org.Apache.CuratorNet.Client.Ensemble;
 using Org.Apache.CuratorNet.Client.Utils;
 
 namespace Org.Apache.CuratorNet.Client
@@ -10,6 +11,7 @@ namespace Org.Apache.CuratorNet.Client
     {
         private readonly IZookeeperFactory zookeeperFactory;
         private readonly Watcher watcher;
+        private readonly IEnsembleProvider ensembleProvider;
         private readonly int sessionTimeout;
         private readonly bool canBeReadOnly;
 
@@ -22,67 +24,61 @@ namespace Org.Apache.CuratorNet.Client
             String getConnectionString();
         }
 
-        HandleHolder(IZookeeperFactory zookeeperFactory, 
+        internal HandleHolder(IZookeeperFactory zookeeperFactory, 
                         Watcher watcher, 
+                        IEnsembleProvider ensembleProvider, 
                         int sessionTimeout, 
                         bool canBeReadOnly)
         {
             this.zookeeperFactory = zookeeperFactory;
             this.watcher = watcher;
+            this.ensembleProvider = ensembleProvider;
             this.sessionTimeout = sessionTimeout;
             this.canBeReadOnly = canBeReadOnly;
         }
 
-        ZooKeeper getZooKeeper()
+        internal ZooKeeper getZooKeeper()
         {
             return (helper != null) ? helper.getZooKeeper() : null;
         }
 
-        String getConnectionString()
+        internal String getConnectionString()
         {
             return (helper != null) ? helper.getConnectionString() : null;
         }
 
-        bool hasNewConnectionString()
+        internal bool hasNewConnectionString()
         {
             String helperConnectionString = (helper != null) ? helper.getConnectionString() : null;
-            return (helperConnectionString != null) /*&& !ensembleProvider.getConnectionString().equals(helperConnectionString)*/;
+            return (helperConnectionString != null) 
+                        && !ensembleProvider.getConnectionString().Equals(helperConnectionString);
         }
 
-        void closeAndClear()
+        internal void closeAndClear()
         {
             internalClose();
             helper = null;
         }
 
-        void closeAndReset()
-        {
-            internalClose();
-
-            // first helper is synchronized when getZooKeeper is called. Subsequent calls
-            // are not synchronized.
-            helper = new CloseHelper();
-        }
-
-        private async void internalClose()
+        private void internalClose()
         {
             try
             {
-                ZooKeeper zooKeeper = helper?.getZooKeeper();
+                ZooKeeper zooKeeper = (helper != null) ? helper.getZooKeeper() : null;
                 if (zooKeeper != null)
                 {
-                    Watcher dummyWatcher = new EmptyWatcher();
-//                    zooKeeper.register(dummyWatcher);// clear the default watcher so that no new events get processed by mistake
-                    await zooKeeper.closeAsync();
+//                    Watcher dummyWatcher = new EmptyWatcher();
+//                    zooKeeper.register(dummyWatcher);   // clear the default watcher so that no new events get processed by mistake
+                    zooKeeper.closeAsync();
                 }
             }
-            catch ( Exception dummy )
+            catch ( Exception )
             {
                 Thread.CurrentThread.Abort();
             }
         }
 
-        internal class EmptyWatcher : Watcher
+        class EmptyWatcher : Watcher
         {
             public override Task process(WatchedEvent @event)
             {
@@ -90,36 +86,37 @@ namespace Org.Apache.CuratorNet.Client
             }
         }
 
-        internal class CloseHelper : Helper
+        class CloseHelper : Helper
         {
-            private volatile ZooKeeper zooKeeperHandle = null;
-            private volatile String connectionString = null;
+            private readonly HandleHolder _handleHolder;
+            private volatile ZooKeeper zooKeeperHandle;
+            private volatile String connectionString;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="T:System.Object"/> class.
+            /// </summary>
+            public CloseHelper(HandleHolder handleHolder)
+            {
+                _handleHolder = handleHolder;
+            }
 
             public ZooKeeper getZooKeeper()
             {
-                lock (this)
+                lock(this)
                 {
                     if (zooKeeperHandle == null)
                     {
-                        connectionString = ensembleProvider.getConnectionString();
-                        zooKeeperHandle = zookeeperFactory.newZooKeeper(connectionString, 
-                                                                        sessionTimeout, 
-                                                                        watcher, 
-                                                                        canBeReadOnly);
+                        connectionString = _handleHolder.ensembleProvider
+                                                        .getConnectionString();
+                        zooKeeperHandle = _handleHolder.zookeeperFactory
+                                                       .newZooKeeper(connectionString,
+                                                                        _handleHolder.sessionTimeout,
+                                                                        _handleHolder.watcher,
+                                                                        _handleHolder.canBeReadOnly);
                     }
 
-                    helper = new Helper()
-                    {
-                        public ZooKeeper getZooKeeper()
-                        {
-                            return zooKeeperHandle;
-                        }
+                    _handleHolder.helper = new UnsyncHelper(this);
 
-                        public String getConnectionString()
-                        {
-                            return connectionString;
-                        }
-                    };
                     return zooKeeperHandle;
                 }
             }
@@ -128,6 +125,38 @@ namespace Org.Apache.CuratorNet.Client
             {
                 return connectionString;
             }
+
+            class UnsyncHelper : Helper
+            {
+                private readonly CloseHelper _helper;
+
+                /// <summary>
+                /// Initializes a new instance of the <see cref="T:System.Object"/> class.
+                /// </summary>
+                public UnsyncHelper(CloseHelper helper)
+                {
+                    _helper = helper;
+                }
+
+                public ZooKeeper getZooKeeper()
+                {
+                    return _helper.zooKeeperHandle;
+                }
+
+                public string getConnectionString()
+                {
+                    return _helper.connectionString;
+                }
+            }
+        }
+
+        internal void closeAndReset()
+        {
+            internalClose();
+
+            // first helper is synchronized when getZooKeeper is called. Subsequent calls
+            // are not synchronized.
+            helper = new CloseHelper(this);
         }
     }
 }

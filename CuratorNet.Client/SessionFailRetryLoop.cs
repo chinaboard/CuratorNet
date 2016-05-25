@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using org.apache.zookeeper;
 using Org.Apache.CuratorNet.Client.Utils;
+using Org.Apache.Java.Types.Concurrent;
 using Org.Apache.Java.Types.Concurrent.Atomics;
 
 namespace Org.Apache.CuratorNet.Client
@@ -80,27 +82,37 @@ namespace Org.Apache.CuratorNet.Client
         private readonly AtomicBoolean             isDone = new AtomicBoolean(false);
         private readonly RetryLoop                 retryLoop;
 
-        private final Watcher         watcher = new Watcher()
+        private class SessionFailWatcher : Watcher
         {
-            @Override
-            public void process(WatchedEvent event)
+            private readonly SessionFailRetryLoop _retryLoop;
+            public SessionFailWatcher(SessionFailRetryLoop retryLoop)
             {
-                if ( event.getState() == Watcher.Event.KeeperState.Expired )
-                    {
-                    sessionHasFailed.set(true);
-                    failedSessionThreads.add(ourThread);
+                _retryLoop = retryLoop;
+            }
+
+            public override Task process(WatchedEvent @event)
+            {
+                if ( @event.getState() == Watcher.Event.KeeperState.Expired )
+                {
+                    _retryLoop.sessionHasFailed.set(true);
+                    SessionFailRetryLoop.failedSessionThreads
+                                        .AddOrUpdate(_retryLoop.ourThread, 
+                                                    _retryLoop.ourThread,
+                                                    (thread, thread1) => _retryLoop.ourThread);
                 }
+                return Task.FromResult<object>(null);
             }
-        };
+        }
 
-        private static readonly Set<Thread>        failedSessionThreads = Sets.newSetFromMap(Maps.< Thread, Boolean > newConcurrentMap());
+        private readonly Watcher watcher;
 
-        public static class SessionFailedException extends Exception
-        {
-              private static final long serialVersionUID = 1L;
-            }
 
-            public enum Mode
+        private static readonly ConcurrentDictionary<Thread, Thread> failedSessionThreads 
+            = new ConcurrentDictionary<Thread, Thread>();
+
+        public class SessionFailedException : ApplicationException {}
+
+        public enum Mode
         {
             /**
              * If the session fails, retry the entire set of operations when {@link SessionFailRetryLoop#shouldContinue()}
@@ -125,9 +137,9 @@ namespace Org.Apache.CuratorNet.Client
          * @return procedure result
          * @throws Exception any non-retriable errors
          */
-        public static<T> T callWithRetry(CuratorZookeeperClient client, Mode mode, Callable<T> proc) throws Exception
+        public static T callWithRetry<T>(CuratorZookeeperClient client, Mode mode, ICallable<T> proc)
         {
-            T result = null;
+            T result = default(T);
             SessionFailRetryLoop retryLoop = client.newSessionFailRetryLoop(mode);
             retryLoop.start();
                 try
@@ -147,21 +159,23 @@ namespace Org.Apache.CuratorNet.Client
             }
                 finally
                 {
-                retryLoop.close();
+                retryLoop.Dispose();
             }
                 return result;
         }
 
-            SessionFailRetryLoop(CuratorZookeeperClient client, Mode mode)
+        internal SessionFailRetryLoop(CuratorZookeeperClient client, Mode mode)
         {
             this.client = client;
             this.mode = mode;
             retryLoop = client.newRetryLoop();
+            watcher = new SessionFailWatcher(this);
         }
 
-        static boolean sessionForThreadHasFailed()
+        internal static bool sessionForThreadHasFailed()
         {
-            return (failedSessionThreads.size() > 0) && failedSessionThreads.contains(Thread.currentThread());
+            return (failedSessionThreads.Count > 0) 
+                    && failedSessionThreads.ContainsKey(Thread.CurrentThread);
         }
 
         /**
@@ -169,8 +183,10 @@ namespace Org.Apache.CuratorNet.Client
          */
         public void start()
         {
-            Preconditions.checkState(Thread.currentThread().equals(ourThread), "Not in the correct thread");
-
+            if (Thread.CurrentThread != ourThread)
+            {
+                throw new InvalidOperationException("Not in the correct thread");
+            }
             client.addParentWatcher(watcher);
         }
 
@@ -179,20 +195,23 @@ namespace Org.Apache.CuratorNet.Client
          *
          * @return true/false
          */
-        public boolean shouldContinue()
+        public bool shouldContinue()
         {
-            boolean localIsDone = isDone.getAndSet(true);
+            bool localIsDone = isDone.getAndSet(true);
             return !localIsDone;
         }
 
         /**
          * Must be called in a finally handler when done with the loop
          */
-        @Override
-            public void close()
+        public void Dispose()
         {
-            Preconditions.checkState(Thread.currentThread().equals(ourThread), "Not in the correct thread");
-            failedSessionThreads.remove(ourThread);
+            if (Thread.CurrentThread != ourThread)
+            {
+                throw new InvalidOperationException("Not in the correct thread");
+            }
+            Thread value;
+            failedSessionThreads.TryRemove(ourThread,out value);
 
             client.removeParentWatcher(watcher);
         }
@@ -203,31 +222,34 @@ namespace Org.Apache.CuratorNet.Client
          * @param exception the exception
          * @throws Exception if not retry-able or the retry policy returned negative
          */
-        public void takeException(Exception exception) throws Exception
+        public void takeException(Exception exception)
         {
-            Preconditions.checkState(Thread.currentThread().equals(ourThread), "Not in the correct thread");
+            if (Thread.CurrentThread != ourThread)
+            {
+                throw new InvalidOperationException("Not in the correct thread");
+            }
 
-            boolean passUp = true;
-                if ( sessionHasFailed.get() )
-                {
+            bool passUp = true;
+            if ( sessionHasFailed.get() )
+            {
                 switch (mode)
                 {
-                    case RETRY:
+                    case Mode.RETRY:
+                    {
+                        sessionHasFailed.set(false);
+                        Thread value;
+                        failedSessionThreads.TryRemove(ourThread, out value);
+                        if (exception is SessionFailedException )
                         {
-                            sessionHasFailed.set(false);
-                            failedSessionThreads.remove(ourThread);
-                            if (exception instanceof SessionFailedException )
-                            {
-                                isDone.set(false);
-                                passUp = false;
-                            }
-                            break;
+                            isDone.set(false);
+                            passUp = false;
                         }
-
-                    case FAIL:
-                        {
-                            break;
-                        }
+                        break;
+                    }
+                    case Mode.FAIL:
+                    {
+                        break;
+                    }
                 }
             }
 
@@ -235,6 +257,6 @@ namespace Org.Apache.CuratorNet.Client
             {
                 retryLoop.takeException(exception);
             }
-            }
+        }
     }
 }

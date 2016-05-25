@@ -49,7 +49,7 @@ namespace Org.Apache.CuratorNet.Client.Utils
                     //localCreateMode = CreateMode.valueOf("CONTAINER");
                     localCreateMode = NON_CONTAINER_MODE;
                 }
-                catch ( Exception e )
+                catch ( Exception)
                 {
                     localCreateMode = NON_CONTAINER_MODE;
                     log.Warn("The version of ZooKeeper being used doesn't support Container nodes. " +
@@ -291,12 +291,13 @@ namespace Org.Apache.CuratorNet.Client.Utils
                     {
                         acl = ZooDefs.Ids.OPEN_ACL_UNSAFE;
                     }
-                    zookeeper.createAsync(subPath, 
-                                            new byte[0], 
-                                            acl.ToList(), 
-                                            getCreateMode(asContainers));
+                    await zookeeper.createAsync(subPath,
+                                                new byte[0],
+                                                acl.ToList(),
+                                                getCreateMode(asContainers))
+                                    .ConfigureAwait(false);
                 }
-                catch ( KeeperException.NodeExistsException e )
+                catch ( KeeperException.NodeExistsException)
                 {
                     // ignore... someone else has created it since we checked
                 }
@@ -334,12 +335,12 @@ namespace Org.Apache.CuratorNet.Client.Utils
             {
                 await zookeeper.deleteAsync(path, -1);
             }
-            catch ( KeeperException.NotEmptyException e )
+            catch ( KeeperException.NotEmptyException )
             {
                 //someone has created a new child since we checked ... delete again.
                 deleteChildren(zookeeper, path, true);
             }
-            catch ( KeeperException.NoNodeException e )
+            catch ( KeeperException.NoNodeException )
             {
                 // ignore... someone else has deleted the node it since we checked
             }

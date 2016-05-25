@@ -27,12 +27,12 @@ namespace Org.Apache.CuratorNet.Client.Retry
         {
             try
             {
-                sleeper.sleepFor(retryIntervalMs, TimeUnit.Milliseconds);
+                sleeper.sleepFor(retryIntervalMs);
             }
             catch (Exception e)
             {
                 Thread.CurrentThread.Abort();
-                log.Warn("Error occurred while sleeping", e);
+                log.Warn(e, "Error occurred while sleeping");
                 return false;
             }
             return true;

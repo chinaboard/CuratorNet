@@ -1,46 +1,57 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using NLog;
 using org.apache.zookeeper;
 using Org.Apache.CuratorNet.Client.Drivers;
+using Org.Apache.CuratorNet.Client.Ensemble;
 using Org.Apache.CuratorNet.Client.Utils;
 using Org.Apache.Java.Types.Concurrent.Atomics;
 
 namespace Org.Apache.CuratorNet.Client
 {
-    class ConnectionState : Watcher, IDisposable
+    internal class ConnectionState : Watcher, IDisposable
     {
         private static readonly int MAX_BACKGROUND_EXCEPTIONS = 10;
         private static readonly bool LOG_EVENTS = true;
         private static readonly Logger log = LogManager.GetCurrentClassLogger();
         private readonly HandleHolder zooKeeper;
-        private readonly AtomicBoolean isConnected = new AtomicBoolean(false);
+        private readonly AtomicBoolean _isConnected = new AtomicBoolean(false);
+        private readonly IEnsembleProvider ensembleProvider;
         private readonly int sessionTimeoutMs;
         private readonly int connectionTimeoutMs;
         private readonly AtomicReference<ITracerDriver> tracer;
-        private readonly ConcurrentQueue<Exception> backgroundExceptions = new ConcurrentQueue<Exception>();
-        private readonly ConcurrentQueue<Watcher> parentWatchers = new ConcurrentQueue<Watcher>();
+        private readonly ConcurrentQueue<Exception> backgroundExceptions 
+            = new ConcurrentQueue<Exception>();
+//        private readonly ConcurrentQueue<Watcher> parentWatchers = new ConcurrentQueue<Watcher>();
+        private readonly ConcurrentDictionary<Watcher, Watcher> parentWatchers 
+            = new ConcurrentDictionary<Watcher, Watcher>();
         private readonly AtomicLong instanceIndex = new AtomicLong();
-        private volatile long connectionStartMs = 0;
+        private long connectionStartMs;
+
+        private readonly object _timeoutLock = new object();
+        private readonly object _resetLock = new object();
 
         internal ConnectionState(IZookeeperFactory zookeeperFactory, 
+                        IEnsembleProvider ensembleProvider, 
                         int sessionTimeoutMs, 
                         int connectionTimeoutMs, 
                         Watcher parentWatcher, 
                         AtomicReference<ITracerDriver> tracer, 
                         bool canBeReadOnly)
         {
+            this.ensembleProvider = ensembleProvider;
             this.sessionTimeoutMs = sessionTimeoutMs;
             this.connectionTimeoutMs = connectionTimeoutMs;
             this.tracer = tracer;
             if (parentWatcher != null)
             {
-                parentWatchers.Enqueue(parentWatcher);
+                parentWatchers.TryAdd(parentWatcher,parentWatcher);
             }
 
-            zooKeeper = new HandleHolder(zookeeperFactory, this, sessionTimeoutMs, canBeReadOnly);
+            zooKeeper = new HandleHolder(zookeeperFactory, this, ensembleProvider, sessionTimeoutMs, canBeReadOnly);
         }
 
         internal ZooKeeper getZooKeeper()
@@ -49,15 +60,15 @@ namespace Org.Apache.CuratorNet.Client
             {
                 throw new SessionFailRetryLoop.SessionFailedException();
             }
-
-            Exception exception = backgroundExceptions.poll();
+            Exception exception;
+            backgroundExceptions.TryDequeue(out exception);
             if ( exception != null )
             {
-                tracer.get().addCount("background-exceptions", 1);
+                tracer.Get().addCount("background-exceptions", 1);
                 throw exception;
             }
 
-            bool localIsConnected = isConnected.get();
+            bool localIsConnected = _isConnected.get();
             if (!localIsConnected)
             {
                 checkTimeouts();
@@ -66,21 +77,21 @@ namespace Org.Apache.CuratorNet.Client
             return zooKeeper.getZooKeeper();
         }
 
-        bool isConnected()
+        internal bool isConnected()
         {
-            return isConnected.get();
+            return _isConnected.get();
         }
 
-        void start()
+        internal void start()
         {
-            log.debug("Starting");
+            log.Debug("Connection starting");
             ensembleProvider.start();
             reset();
         }
 
-        public void close()
+        public void Dispose()
         {
-            log.Debug("Closing");
+            log.Debug("Connection Closing");
 
             CloseableUtils.closeQuietly(ensembleProvider);
             try
@@ -90,148 +101,161 @@ namespace Org.Apache.CuratorNet.Client
             catch ( Exception e )
             {
                 ThreadUtils.checkInterrupted(e);
-                throw new IOException(e);
+                throw new IOException("",e);
             }
             finally
             {
-                isConnected.set(false);
+                _isConnected.set(false);
             }
         }
 
-        void addParentWatcher(Watcher watcher)
+        internal void addParentWatcher(Watcher watcher)
         {
-            parentWatchers.offer(watcher);
+            parentWatchers.TryAdd(watcher, watcher);
         }
 
-        void removeParentWatcher(Watcher watcher)
+        internal void removeParentWatcher(Watcher watcher)
         {
-            parentWatchers.remove(watcher);
+            Watcher value;
+            parentWatchers.TryRemove(watcher, out value);
         }
 
-        long getInstanceIndex()
+        internal long getInstanceIndex()
         {
-            return instanceIndex.get();
+            return instanceIndex.Get();
         }
 
-        @Override
-        public void process(WatchedEvent event)
+        public override Task process(WatchedEvent @event)
         {
             if (LOG_EVENTS)
             {
-                log.debug("ConnectState watcher: " + event);
+                log.Debug("ConnectState watcher: " + @event);
             }
 
-            if ( event.getType() == Watcher.Event.EventType.None )
+            if ( @event.get_Type() == Watcher.Event.EventType.None )
             {
-                boolean wasConnected = isConnected.get();
-                boolean newIsConnected = checkState(event.getState(), wasConnected);
-                if (newIsConnected != wasConnected)
+                bool wasConnected = _isConnected.get();
+                bool newIsConnected = checkState(@event.getState(), wasConnected);
+                if ( newIsConnected != wasConnected )
                 {
-                    isConnected.set(newIsConnected);
-                    connectionStartMs = System.currentTimeMillis();
+                    _isConnected.set(newIsConnected);
+                    Volatile.Write(ref connectionStartMs, CurrentMillis);
                 }
             }
 
-            for (Watcher parentWatcher : parentWatchers)
+            foreach ( Watcher parentWatcher in parentWatchers.Values )
             {
-                TimeTrace timeTrace = new TimeTrace("connection-state-parent-process", tracer.get());
-                parentWatcher.process(event);
+                TimeTrace timeTrace = new TimeTrace("connection-state-parent-process", tracer.Get());
+                parentWatcher.process(@event);
                 timeTrace.commit();
             }
+            return Task.FromResult<object>(null);
         }
 
-        EnsembleProvider getEnsembleProvider()
+        private static long CurrentMillis
+        {
+            get { return DateTime.Now.Ticks / 1000; }
+        }
+
+        internal IEnsembleProvider getEnsembleProvider()
         {
             return ensembleProvider;
         }
 
-        private synchronized void checkTimeouts() throws Exception
+        private void checkTimeouts()
         {
-            int minTimeout = Math.min(sessionTimeoutMs, connectionTimeoutMs);
-            long elapsed = System.currentTimeMillis() - connectionStartMs;
-            if ( elapsed >= minTimeout )
+            lock (_timeoutLock)
             {
-                if (zooKeeper.hasNewConnectionString())
+                int minTimeout = Math.Min(sessionTimeoutMs, connectionTimeoutMs);
+                long elapsed = CurrentMillis - Volatile.Read(ref connectionStartMs);
+                if ( elapsed >= minTimeout )
                 {
-                    handleNewConnectionString();
-                }
-                else
-                {
-                    int maxTimeout = Math.max(sessionTimeoutMs, connectionTimeoutMs);
-                    if (elapsed > maxTimeout)
+                    if (zooKeeper.hasNewConnectionString())
                     {
-                        if (!Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES))
-                        {
-                            log.warn(String.format("Connection attempt unsuccessful after %d (greater than max timeout of %d). Resetting connection and trying again with a new connection.", elapsed, maxTimeout));
-                        }
-                        reset();
+                        handleNewConnectionString();
                     }
                     else
                     {
-                        KeeperException.ConnectionLossException connectionLossException = new CuratorConnectionLossException();
-                        if (!Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES))
+                        int maxTimeout = Math.Max(sessionTimeoutMs, connectionTimeoutMs);
+                        if (elapsed > maxTimeout)
                         {
-                            log.error(String.format("Connection timed out for connection string (%s) and timeout (%d) / elapsed (%d)", zooKeeper.getConnectionString(), connectionTimeoutMs, elapsed), connectionLossException);
+                            log.Warn("Connection attempt unsuccessful after {0} " 
+                                                    + "(greater than max timeout of {1}). Resetting " 
+                                                    + "connection and trying again with a new connection.", 
+                                                    elapsed, maxTimeout);
+                            reset();
                         }
-                        tracer.get().addCount("connections-timed-out", 1);
-                        throw connectionLossException;
+                        else
+                        {
+                            var connectionLossException = new CuratorConnectionLossException();
+                            log.Error(String.Format("Connection timed out for connection string "
+                                                    + "({0}) and timeout ({1}) / elapsed ({2})", 
+                                                    zooKeeper.getConnectionString(), 
+                                                    connectionTimeoutMs, 
+                                                    elapsed), 
+                                                    connectionLossException);
+                            tracer.Get().addCount("connections-timed-out", 1);
+                            throw connectionLossException;
+                        }
                     }
                 }
             }
         }
 
-        private synchronized void reset() throws Exception
+        private void reset()
         {
-            log.debug("reset");
+            lock (_resetLock)
+            {
+                log.Debug("Connection reset");
 
-            instanceIndex.incrementAndGet();
+                instanceIndex.IncrementAndGet();
 
-            isConnected.set(false);
-            connectionStartMs = System.currentTimeMillis();
-            zooKeeper.closeAndReset();
-            zooKeeper.getZooKeeper();   // initiate connection
+                _isConnected.set(false);
+                Volatile.Write(ref connectionStartMs, CurrentMillis);
+                zooKeeper.closeAndReset();
+                zooKeeper.getZooKeeper();   // initiate connection
             }
+        }
 
-        private boolean checkState(Event.KeeperState state, boolean wasConnected)
+        private bool checkState(Event.KeeperState state, bool wasConnected)
         {
-            boolean isConnected = wasConnected;
-            boolean checkNewConnectionString = true;
+            bool isConnected = wasConnected;
+            bool checkNewConnectionString = true;
             switch (state)
             {
-                default:
-                case Disconnected:
-                    {
-                        isConnected = false;
-                        break;
-                    }
+                case Event.KeeperState.Disconnected:
+                {
+                    isConnected = false;
+                    break;
+                }
 
-                case SyncConnected:
-                case ConnectedReadOnly:
-                    {
-                        isConnected = true;
-                        break;
-                    }
+                case Event.KeeperState.SyncConnected:
+                case Event.KeeperState.ConnectedReadOnly:
+                {
+                    isConnected = true;
+                    break;
+                }
 
-                case AuthFailed:
-                    {
-                        isConnected = false;
-                        log.error("Authentication failed");
-                        break;
-                    }
+                case Event.KeeperState.AuthFailed:
+                {
+                    isConnected = false;
+                    log.Error("Authentication failed");
+                    break;
+                }
 
-                case Expired:
-                    {
-                        isConnected = false;
-                        checkNewConnectionString = false;
-                        handleExpiredSession();
-                        break;
-                    }
+                case Event.KeeperState.Expired:
+                {
+                    isConnected = false;
+                    checkNewConnectionString = false;
+                    handleExpiredSession();
+                    break;
+                }
 
-                case SaslAuthenticated:
-                    {
-                        // NOP
-                        break;
-                    }
+                default :
+                {
+                    // NOP
+                    break;
+                }
             }
 
             if (checkNewConnectionString && zooKeeper.hasNewConnectionString())
@@ -244,8 +268,8 @@ namespace Org.Apache.CuratorNet.Client
 
         private void handleNewConnectionString()
         {
-            log.info("Connection string changed");
-            tracer.get().addCount("connection-string-changed", 1);
+            log.Info("Connection string changed");
+            tracer.Get().addCount("connection-string-changed", 1);
 
             try
             {
@@ -260,8 +284,8 @@ namespace Org.Apache.CuratorNet.Client
 
         private void handleExpiredSession()
         {
-            log.warn("Session expired event received");
-            tracer.get().addCount("session-expired", 1);
+            log.Warn("Session expired event received");
+            tracer.Get().addCount("session-expired", 1);
 
             try
             {
@@ -274,14 +298,14 @@ namespace Org.Apache.CuratorNet.Client
             }
         }
 
-        @SuppressWarnings({ "ThrowableResultOfMethodCallIgnored"})
         private void queueBackgroundException(Exception e)
         {
-            while (backgroundExceptions.size() >= MAX_BACKGROUND_EXCEPTIONS)
+            while (backgroundExceptions.Count >= MAX_BACKGROUND_EXCEPTIONS)
             {
-                backgroundExceptions.poll();
+                Exception value;
+                backgroundExceptions.TryDequeue(out value);
             }
-            backgroundExceptions.offer(e);
+            backgroundExceptions.Enqueue(e);
         }
     }
 }

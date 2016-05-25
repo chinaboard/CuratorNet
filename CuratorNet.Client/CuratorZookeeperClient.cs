@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using NLog;
 using org.apache.zookeeper;
 using Org.Apache.CuratorNet.Client.Drivers;
+using Org.Apache.CuratorNet.Client.Ensemble;
 using Org.Apache.CuratorNet.Client.Utils;
 using Org.Apache.Java.Types;
 using Org.Apache.Java.Types.Concurrent.Atomics;
@@ -36,15 +37,16 @@ namespace Org.Apache.CuratorNet.Client
                                         int sessionTimeoutMs, 
                                         int connectionTimeoutMs, 
                                         Watcher watcher, 
-                                        IRetryPolicy retryPolicy)
+                                        IRetryPolicy retryPolicy) 
+            : this(new DefaultZookeeperFactory(),
+                    new FixedEnsembleProvider(connectString),
+                    sessionTimeoutMs,
+                    connectionTimeoutMs,
+                    watcher,
+                    retryPolicy,
+                    false)
         {
-            this(new DefaultZookeeperFactory(), 
-                    /*new FixedEnsembleProvider(connectString),*/ 
-                    sessionTimeoutMs, 
-                    connectionTimeoutMs, 
-                    watcher, 
-                    retryPolicy, 
-                    false);
+            
         }
 
         /**
@@ -54,19 +56,19 @@ namespace Org.Apache.CuratorNet.Client
          * @param watcher default watcher or null
          * @param retryPolicy the retry policy to use
          */
-        public CuratorZookeeperClient(/*EnsembleProvider ensembleProvider,*/ 
+        public CuratorZookeeperClient(IEnsembleProvider ensembleProvider, 
                                         int sessionTimeoutMs, 
                                         int connectionTimeoutMs, 
                                         Watcher watcher, 
                                         IRetryPolicy retryPolicy)
+            : this(new DefaultZookeeperFactory(),
+                    ensembleProvider,
+                    sessionTimeoutMs,
+                    connectionTimeoutMs,
+                    watcher,
+                    retryPolicy,
+                    false)
         {
-            this(new DefaultZookeeperFactory(), 
-                    /*ensembleProvider,*/ 
-                    sessionTimeoutMs, 
-                    connectionTimeoutMs, 
-                    watcher, 
-                    retryPolicy, 
-                    false);
         }
 
         /**
@@ -82,28 +84,37 @@ namespace Org.Apache.CuratorNet.Client
          *                      for details
          */
         public CuratorZookeeperClient(IZookeeperFactory zookeeperFactory, 
-                                        /*EnsembleProvider ensembleProvider,*/
+                                        IEnsembleProvider ensembleProvider,
                                         int sessionTimeoutMs, 
                                         int connectionTimeoutMs, 
                                         Watcher watcher, 
                                         IRetryPolicy retryPolicy, 
                                         bool canBeReadOnly)
         {
+            if (ensembleProvider == null)
+            {
+                throw new ArgumentNullException(nameof(ensembleProvider),
+                                                "ensembleProvider cannot be null");
+            }
             if (retryPolicy == null)
             {
-                throw new ArgumentNullException(nameof(retryPolicy));
+                throw new ArgumentNullException(nameof(retryPolicy),
+                                                "retryPolicy cannot be null");
             }
             if (sessionTimeoutMs < connectionTimeoutMs)
             {
-                log.Warn(String.Format("session timeout [%d] is less than connection timeout [%d]", 
+                log.Warn("session timeout [{0}] is less than connection timeout [{1}]", 
                                         sessionTimeoutMs, 
-                                        connectionTimeoutMs));
+                                        connectionTimeoutMs);
             }
-//            retryPolicy = Preconditions.checkNotNull(retryPolicy, "retryPolicy cannot be null");
-//            ensembleProvider = Preconditions.checkNotNull(ensembleProvider, "ensembleProvider cannot be null");
-
             this.connectionTimeoutMs = connectionTimeoutMs;
-            state = new ConnectionState(zookeeperFactory, /*ensembleProvider,*/ sessionTimeoutMs, connectionTimeoutMs, watcher, tracer, canBeReadOnly);
+            state = new ConnectionState(zookeeperFactory, 
+                                            ensembleProvider, 
+                                            sessionTimeoutMs, 
+                                            connectionTimeoutMs, 
+                                            watcher, 
+                                            tracer, 
+                                            canBeReadOnly);
             setRetryPolicy(retryPolicy);
         }
 
@@ -129,7 +140,7 @@ namespace Org.Apache.CuratorNet.Client
          */
         public RetryLoop newRetryLoop()
         {
-            return new RetryLoop(retryPolicy.get(), tracer);
+            return new RetryLoop(retryPolicy.Get(), tracer);
         }
 
         /**
@@ -202,14 +213,14 @@ namespace Org.Apache.CuratorNet.Client
         /**
          * Close the client
          */
-        public void close()
+        public void Dispose()
         {
             log.Debug("Closing");
 
             started.set(false);
             try
             {
-                state.close();
+                state.Dispose();
             }
             catch (IOException e)
             {
@@ -229,7 +240,7 @@ namespace Org.Apache.CuratorNet.Client
             {
                 throw new InvalidOperationException("policy cannot be null");
             }
-            retryPolicy.set(policy);
+            retryPolicy.Set(policy);
         }
 
         /**
@@ -239,7 +250,7 @@ namespace Org.Apache.CuratorNet.Client
          */
         public IRetryPolicy getRetryPolicy()
         {
-            return retryPolicy.get();
+            return retryPolicy.Get();
         }
 
         /**
@@ -249,7 +260,7 @@ namespace Org.Apache.CuratorNet.Client
          */
         public TimeTrace startTracer(String name)
         {
-            return new TimeTrace(name, tracer.get());
+            return new TimeTrace(name, tracer.Get());
         }
 
         /**
@@ -259,7 +270,7 @@ namespace Org.Apache.CuratorNet.Client
          */
         public ITracerDriver getTracerDriver()
         {
-            return tracer.get();
+            return tracer.Get();
         }
 
         /**
@@ -269,7 +280,7 @@ namespace Org.Apache.CuratorNet.Client
          */
         public void setTracerDriver(ITracerDriver tracer)
         {
-            this.tracer.set(tracer);
+            this.tracer.Set(tracer);
         }
 
         /**
@@ -304,17 +315,17 @@ namespace Org.Apache.CuratorNet.Client
             return state.getInstanceIndex();
         }
 
-        void addParentWatcher(Watcher watcher)
+        internal void addParentWatcher(Watcher watcher)
         {
             state.addParentWatcher(watcher);
         }
 
-        void removeParentWatcher(Watcher watcher)
+        internal void removeParentWatcher(Watcher watcher)
         {
             state.removeParentWatcher(watcher);
         }
 
-        void internalBlockUntilConnectedOrTimedOut()
+        internal void internalBlockUntilConnectedOrTimedOut()
         {
             TimeSpan waitTimeMs = TimeSpan.FromMilliseconds(connectionTimeoutMs);
             while ( !state.isConnected() && (waitTimeMs > TimeSpan.Zero) )
