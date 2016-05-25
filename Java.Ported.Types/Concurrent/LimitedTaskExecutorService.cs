@@ -58,14 +58,14 @@ namespace Org.Apache.Java.Types.Concurrent
                 int currentTasks = _curTasksCount.DecrementAndGet();// this is linerization point in concurrent execution 
                                                                     // with TaskCompletedHandler method. This must follow after
                                                                     // enqueuing of new task.
-                if (currentTasks <= 0 || currentTasks < _maxTasks)  // If all currently run task finished between counter atomic 
-                                                                    // increment and task enqueue, then we have to start pending tasks 
-                                                                    // manually because no task completion handlers see last enqueued value.
-                                                                    // Also we have to consider the case when current run task count less 
-                                                                    // then it maximum value and we have chance to run more tasks 
-                                                                    // right now(this case help to run as more task as possible).
-                                                                    // Less than 0 values not expected, but to prevent some unusual
-                                                                    // implementation details we support this case.
+                if (currentTasks < _maxTasks)   // If all currently run task finished between counter atomic 
+                                                // increment and task enqueue, then we have to start pending tasks 
+                                                // manually because no task completion handlers see last enqueued value.
+                                                // Also we have to consider the case when current run task count less 
+                                                // then it maximum value and we have chance to run more tasks 
+                                                // right now(this case help to run as more task as possible).
+                                                // Less than 0 values not expected, but to prevent some unusual
+                                                // implementation details we support this case.
                 {
                     TryForkPending();
                 }
@@ -91,14 +91,17 @@ namespace Org.Apache.Java.Types.Concurrent
                 // and exceed max simultanious tasks => we must decrease 
                 // counter back to original value
                 _curTasksCount.DecrementAndGet();
+                //we take task from queue but fail to run it => return it to pending queue
+                _pendingTaskQueue.Enqueue(task);
                 break;
             }
         }
 
         private Task CreateTask<T>(FutureTask<T> task)
         {
-            return new Task(task.run, task.CancelToken.Token)
-                        .ContinueWith(TaskCompletedHandler);
+            Task newTask = new Task(task.run, task.CancelToken.Token);
+            newTask.ContinueWith(TaskCompletedHandler);
+            return newTask;
         }
 
         private void TaskCompletedHandler(Task task)

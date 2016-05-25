@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CuratorNet.Client", "Curato
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Java.Ported.Types", "Java.Ported.Types\Java.Ported.Types.csproj", "{7E458CAB-585F-4984-B903-93A6FBCE9824}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CuratorNet.Client.Tests", "CuratorNet.Client.Tests\CuratorNet.Client.Tests.csproj", "{4E1DCE64-C6F2-4B7F-9470-631D9A68FBDE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Java.Ported.Types.Tests", "Java.Ported.Types.Tests\Java.Ported.Types.Tests.csproj", "{C162868F-BA15-4041-8793-172978E14690}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{7E458CAB-585F-4984-B903-93A6FBCE9824}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7E458CAB-585F-4984-B903-93A6FBCE9824}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7E458CAB-585F-4984-B903-93A6FBCE9824}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4E1DCE64-C6F2-4B7F-9470-631D9A68FBDE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E1DCE64-C6F2-4B7F-9470-631D9A68FBDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E1DCE64-C6F2-4B7F-9470-631D9A68FBDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E1DCE64-C6F2-4B7F-9470-631D9A68FBDE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C162868F-BA15-4041-8793-172978E14690}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C162868F-BA15-4041-8793-172978E14690}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C162868F-BA15-4041-8793-172978E14690}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C162868F-BA15-4041-8793-172978E14690}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
