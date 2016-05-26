@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CuratorNet.Client.Tests", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Java.Ported.Types.Tests", "Java.Ported.Types.Tests\Java.Ported.Types.Tests.csproj", "{C162868F-BA15-4041-8793-172978E14690}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CuratorNet.Test", "CuratorNet.Test\CuratorNet.Test.csproj", "{99C14522-DB40-4B10-8682-95D379911B93}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{C162868F-BA15-4041-8793-172978E14690}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C162868F-BA15-4041-8793-172978E14690}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C162868F-BA15-4041-8793-172978E14690}.Release|Any CPU.Build.0 = Release|Any CPU
+		{99C14522-DB40-4B10-8682-95D379911B93}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{99C14522-DB40-4B10-8682-95D379911B93}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{99C14522-DB40-4B10-8682-95D379911B93}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{99C14522-DB40-4B10-8682-95D379911B93}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

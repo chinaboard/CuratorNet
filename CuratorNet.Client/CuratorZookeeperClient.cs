@@ -199,12 +199,11 @@ namespace Org.Apache.CuratorNet.Client
          */
         public void start()
         {
-            log.Debug("Starting");
+            log.Debug("Starting ZK client");
 
             if ( !started.compareAndSet(false, true) )
             {
-                InvalidOperationException ise = new InvalidOperationException("Already started");
-                throw ise;
+                throw new InvalidOperationException("Already started");
             }
 
             state.start();

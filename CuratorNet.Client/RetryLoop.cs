@@ -101,7 +101,7 @@ namespace Org.Apache.CuratorNet.Client
             return result;
         }
 
-        internal RetryLoop(IRetryPolicy retryPolicy, AtomicReference<ITracerDriver> tracer)
+        public RetryLoop(IRetryPolicy retryPolicy, AtomicReference<ITracerDriver> tracer)
         {
             this.retryPolicy = retryPolicy;
             this.tracer = tracer;

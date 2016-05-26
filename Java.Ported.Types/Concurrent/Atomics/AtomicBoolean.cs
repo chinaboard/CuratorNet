@@ -29,12 +29,18 @@ namespace Org.Apache.Java.Types.Concurrent.Atomics
             Interlocked.Exchange(ref _value, intVal);
         }
 
+        /// <summary>
+        /// Atomically sets the value to the given updated value if the current value == the expected value.
+        /// </summary>
+        /// <param name="expect"></param>
+        /// <param name="update"></param>
+        /// <returns>true if successful. False return indicates that the actual value was not equal to the expected value.</returns>
         public bool compareAndSet(bool expect, bool update)
         {
             int expectedInt = expect ? 1 : 0;
             int updateInt = update ? 1 : 0;
             int origValue = Interlocked.CompareExchange(ref _value, updateInt, expectedInt);
-            return origValue == 1;
+            return origValue == expectedInt;
         }
     }
 }

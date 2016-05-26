@@ -67,9 +67,9 @@ namespace Org.Apache.CuratorNet.Client
                 ZooKeeper zooKeeper = (helper != null) ? helper.getZooKeeper() : null;
                 if (zooKeeper != null)
                 {
-//                    Watcher dummyWatcher = new EmptyWatcher();
-//                    zooKeeper.register(dummyWatcher);   // clear the default watcher so that no new events get processed by mistake
-                    zooKeeper.closeAsync();
+                    //Watcher dummyWatcher = new EmptyWatcher();
+                    //zooKeeper.register(dummyWatcher);   // clear the default watcher so that no new events get processed by mistake
+                    zooKeeper.closeAsync().Wait();
                 }
             }
             catch ( Exception )

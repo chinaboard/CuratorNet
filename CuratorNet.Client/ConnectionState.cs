@@ -25,9 +25,9 @@ namespace Org.Apache.CuratorNet.Client
         private readonly AtomicReference<ITracerDriver> tracer;
         private readonly ConcurrentQueue<Exception> backgroundExceptions 
             = new ConcurrentQueue<Exception>();
-//        private readonly ConcurrentQueue<Watcher> parentWatchers = new ConcurrentQueue<Watcher>();
-        private readonly ConcurrentDictionary<Watcher, Watcher> parentWatchers 
-            = new ConcurrentDictionary<Watcher, Watcher>();
+        private volatile ConcurrentQueue<Watcher> parentWatchers = new ConcurrentQueue<Watcher>();
+//        private readonly ConcurrentDictionary<Watcher, Watcher> parentWatchers 
+//            = new ConcurrentDictionary<Watcher, Watcher>();
         private readonly AtomicLong instanceIndex = new AtomicLong();
         private long connectionStartMs;
 
@@ -48,7 +48,7 @@ namespace Org.Apache.CuratorNet.Client
             this.tracer = tracer;
             if (parentWatcher != null)
             {
-                parentWatchers.TryAdd(parentWatcher,parentWatcher);
+                parentWatchers.Enqueue(parentWatcher);
             }
 
             zooKeeper = new HandleHolder(zookeeperFactory, this, ensembleProvider, sessionTimeoutMs, canBeReadOnly);
@@ -111,13 +111,22 @@ namespace Org.Apache.CuratorNet.Client
 
         internal void addParentWatcher(Watcher watcher)
         {
-            parentWatchers.TryAdd(watcher, watcher);
+            parentWatchers.Enqueue(watcher);
         }
 
         internal void removeParentWatcher(Watcher watcher)
         {
-            Watcher value;
-            parentWatchers.TryRemove(watcher, out value);
+            // TODO: this is workaround to remove element from queue in C#
+            // Java version of queue has remove method
+            ConcurrentQueue<Watcher> newQueue = new ConcurrentQueue<Watcher>();
+            foreach (Watcher parentWatcher in parentWatchers)
+            {
+                if (parentWatcher != watcher)
+                {
+                    newQueue.Enqueue(watcher);
+                }
+            }
+            parentWatchers = newQueue;
         }
 
         internal long getInstanceIndex()
@@ -143,7 +152,7 @@ namespace Org.Apache.CuratorNet.Client
                 }
             }
 
-            foreach ( Watcher parentWatcher in parentWatchers.Values )
+            foreach ( Watcher parentWatcher in parentWatchers )
             {
                 TimeTrace timeTrace = new TimeTrace("connection-state-parent-process", tracer.Get());
                 parentWatcher.process(@event);
