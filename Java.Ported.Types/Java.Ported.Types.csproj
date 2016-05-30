@@ -60,6 +60,7 @@
     <Compile Include="Concurrent\ExecutorServiceBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Concurrent\ScheduledExecutorService.cs" />
+    <Compile Include="RunnableUtils.cs" />
     <Compile Include="TimeUnit.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -1,19 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using Moq;
-using NUnit.Framework;
-using org.apache.zookeeper;
-using org.apache.zookeeper.data;
+﻿using NUnit.Framework;
 using Org.Apache.CuratorNet.Client;
 using Org.Apache.CuratorNet.Client.Ensemble;
 using Org.Apache.CuratorNet.Client.Retry;
 using Org.Apache.CuratorNet.Client.Utils;
-using Org.Apache.Java.Types;
-using Org.Apache.Java.Types.Concurrent;
 
 namespace CuratorNet.Client.Tests
 {

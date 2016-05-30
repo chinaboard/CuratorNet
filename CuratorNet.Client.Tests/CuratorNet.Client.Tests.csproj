@@ -58,8 +58,11 @@
     <Compile Include="BaseZkTest.cs" />
     <Compile Include="BasicTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TestCloseableExecutorService.cs" />
+    <Compile Include="TestCloseableScheduledExecutorService.cs" />
     <Compile Include="TestEnsurePath.cs" />
     <Compile Include="TestRetryLoop.cs" />
+    <Compile Include="TestSessionFailRetryLoop.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

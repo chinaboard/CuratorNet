@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -57,10 +58,13 @@ namespace CuratorNet.Client.Tests
         }
 
         [Test]
+        [Ignore]
         public void testExpiredSession()
         {
-            Barrier latch = new Barrier(2);
-            Watcher watcher = new ExpiredWatcher(latch);
+            // WARN: test requires that this must be address of one ZK host, 
+            // not a connection string to many nodes
+            Barrier expiresBarrier = new Barrier(2);
+            Watcher watcher = new ExpiredWatcher(expiresBarrier);
             CuratorZookeeperClient client = new CuratorZookeeperClient(ZkDefaultHosts, 
                                                                         DefaultSessionTimeout,
                                                                         DefaultConnectionTimeout, 
@@ -74,7 +78,7 @@ namespace CuratorNet.Client.Tests
                     client,
                     CallableUtils.FromFunc<object>(() =>
                     {
-                        if (firstTime.compareAndSet(false, true))
+                        if (firstTime.compareAndSet(true, false))
                         {
                             try
                             {
@@ -97,8 +101,8 @@ namespace CuratorNet.Client.Tests
                                 }
                             }
 
-                            KillSession.kill(client.getZooKeeper(), ZkDefaultHosts, DefaultSessionTimeout);
-                            Assert.True(latch.SignalAndWait(DefaultSessionTimeout));
+                            KillSession.kill(client.getZooKeeper(), ZkDefaultHosts, DefaultSessionTimeout * 3);
+                            Assert.True(expiresBarrier.SignalAndWait(DefaultSessionTimeout));
                         }
                         ZooKeeper zooKeeper = client.getZooKeeper();
                         client.blockUntilConnectedOrTimedOut();
@@ -117,40 +121,40 @@ namespace CuratorNet.Client.Tests
             }
         }
 
-        //        [Test]
-        //        public void testReconnect()
-        //        {
-        //            CuratorZookeeperClient client = new CuratorZookeeperClient(ZkDefaultHosts, 
-        //                                                                        10000, 
-        //                                                                        10000, 
-        //                                                                        null, 
-        //                                                                        new RetryOneTime(1));
-        //            client.start();
-        //            try
-        //            {
-        //                client.blockUntilConnectedOrTimedOut();
-        //                byte[] writtenData = { 1, 2, 3 };
-        //                client.getZooKeeper().createAsync("/test", 
-        //                                                    writtenData, 
-        //                                                    ZooDefs.Ids.OPEN_ACL_UNSAFE, 
-        //                                                    CreateMode.PERSISTENT)
-        //                                     .Wait();
-        //                Thread.Sleep(1000);
-        //                server.stop();
-        //                Thread.Sleep(1000);
-        //
-        //                server.restart();
-        //                Assert.True(client.blockUntilConnectedOrTimedOut());
-        //                Task<DataResult> dataAsync = client.getZooKeeper().getDataAsync("/test", false);
-        //                dataAsync.Wait();
-        //                byte[] readData = dataAsync.Result.Data;
-        //                Assert.AreEqual(readData, writtenData);
-        //            }
-        //            finally
-        //            {
-        //                client.Dispose();
-        //            }
-        //        }
+//                [Test]
+//                public void testReconnect()
+//                {
+//                    CuratorZookeeperClient client = new CuratorZookeeperClient(ZkDefaultHosts, 
+//                                                                                10000, 
+//                                                                                10000, 
+//                                                                                null, 
+//                                                                                new RetryOneTime(1));
+//                    client.start();
+//                    try
+//                    {
+//                        client.blockUntilConnectedOrTimedOut();
+//                        byte[] writtenData = { 1, 2, 3 };
+//                        client.getZooKeeper().createAsync("/test", 
+//                                                            writtenData, 
+//                                                            ZooDefs.Ids.OPEN_ACL_UNSAFE, 
+//                                                            CreateMode.PERSISTENT)
+//                                             .Wait();
+//                        Thread.Sleep(1000);
+//                        server.stop();
+//                        Thread.Sleep(1000);
+//        
+//                        server.restart();
+//                        Assert.True(client.blockUntilConnectedOrTimedOut());
+//                        Task<DataResult> dataAsync = client.getZooKeeper().getDataAsync("/test", false);
+//                        dataAsync.Wait();
+//                        byte[] readData = dataAsync.Result.Data;
+//                        Assert.AreEqual(readData, writtenData);
+//                    }
+//                    finally
+//                    {
+//                        client.Dispose();
+//                    }
+//                }
 
         [Test]
         public void testSimple()

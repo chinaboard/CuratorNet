@@ -11,12 +11,12 @@ namespace Org.Apache.CuratorNet.Client.Utils
     /// </summary>
     public class CloseableScheduledExecutorService : CloseableExecutorService
     {
-        private readonly ScheduledExecutorService _scheduledExecService;
+        private readonly IScheduledExecutorService _scheduledExecService;
 
         /**
          * @param scheduledExecutorService the service to decorate
          */
-        public CloseableScheduledExecutorService(ScheduledExecutorService scheduledExecService)
+        public CloseableScheduledExecutorService(IScheduledExecutorService scheduledExecService)
             : base(scheduledExecService)
         {
             _scheduledExecService = scheduledExecService;
@@ -65,8 +65,8 @@ namespace Org.Apache.CuratorNet.Client.Utils
          *         exception upon cancellation
          */
         public IFuture<object> scheduleWithFixedDelay(IRunnable task, 
-                                                    int initialDelay, 
-                                                    int delayMs)
+                                                        int initialDelay, 
+                                                        int delayMs)
         {
             if (!isOpen.get())
             {

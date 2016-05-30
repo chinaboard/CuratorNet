@@ -2,7 +2,7 @@
 
 namespace Org.Apache.Java.Types.Concurrent
 {
-    public interface IScheduledExecutorService
+    public interface IScheduledExecutorService : IExecutorService
     {
         IFuture<object> schedule(FutureTask<object> command, int delayMs);
 

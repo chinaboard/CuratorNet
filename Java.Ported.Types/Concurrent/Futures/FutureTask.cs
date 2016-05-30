@@ -36,7 +36,7 @@ namespace Org.Apache.Java.Types.Concurrent.Futures
         /** The result to return or exception to throw from get() */
         private Object outcome; // non-volatile, protected by state reads/writes
 
-        public readonly CancellationTokenSource CancelToken = new CancellationTokenSource();
+        public readonly CancellationTokenSource CancelToken;
 
         /** Treiber stack of waiting threads */
         private volatile WaitNode waiters;
@@ -75,6 +75,7 @@ namespace Org.Apache.Java.Types.Concurrent.Futures
             }
             this.callable = callable;
             this.state = NEW;       // ensure visibility of callable
+            CancelToken = new CancellationTokenSource();
         }
 
         /**
@@ -91,8 +92,52 @@ namespace Org.Apache.Java.Types.Concurrent.Futures
          */
         public FutureTask(IRunnable runnable)
         {
+            if (runnable == null)
+            {
+                throw new ArgumentNullException(nameof(runnable));
+            }
             this.callable = new RunnableCallable<T>(runnable);
             this.state = NEW;       // ensure visibility of callable
+            CancelToken = new CancellationTokenSource();
+        }
+
+        /**
+         * Creates a {@code FutureTask} that will, upon running, execute the
+         * given {@code Callable}.
+         *
+         * @param  callable the callable task
+         * @throws NullPointerException if the callable is null
+         */
+        public FutureTask(ICallable<T> callable, CancellationTokenSource token)
+            : this(callable)
+        {
+            if (token == null)
+            {
+                throw new ArgumentNullException(nameof(token));
+            }
+            CancelToken = token;
+        }
+
+        /**
+         * Creates a {@code FutureTask} that will, upon running, execute the
+         * given {@code Runnable}, and arrange that {@code get} will return the
+         * given result on successful completion.
+         *
+         * @param runnable the runnable task
+         * @param result the result to return on successful completion. If
+         * you don't need a particular result, consider using
+         * constructions of the form:
+         * {@code Future<?> f = new FutureTask<Void>(runnable, null)}
+         * @throws NullPointerException if the runnable is null
+         */
+        public FutureTask(IRunnable runnable, CancellationTokenSource token) 
+            : this(runnable)
+        {
+            if (token == null)
+            {
+                throw new ArgumentNullException(nameof(token));
+            }
+            CancelToken = token;
         }
 
         public bool isCancelled()

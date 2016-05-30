@@ -1,6 +1,7 @@
 ﻿using NLog;
 using System;
 using System.Collections.Concurrent;
+using System.Threading;
 using Org.Apache.Java.Types.Concurrent;
 using Org.Apache.Java.Types.Concurrent.Atomics;
 using Org.Apache.Java.Types.Concurrent.Futures;
@@ -103,7 +104,7 @@ namespace Org.Apache.CuratorNet.Client.Utils
             return !isOpen.get();
         }
 
-        int size()
+        public int size()
         {
             return futures.Count;
         }
@@ -144,6 +145,27 @@ namespace Org.Apache.CuratorNet.Client.Utils
             }
             InternalFutureTask<object> futureTask 
                 = new InternalFutureTask<object>(this, new FutureTask<object>(task));
+            return execService.submit(futureTask);
+        }
+
+        public IFuture<T> submit<T>(ICallable<T> task, CancellationTokenSource token) where T : class
+        {
+            if (!isOpen.get())
+            {
+                throw new InvalidOperationException("CloseableExecutorService is closed");
+            }
+            InternalFutureTask<T> futureTask = new InternalFutureTask<T>(this, new FutureTask<T>(task, token));
+            return execService.submit(futureTask);
+        }
+
+        public IFuture<object> submit(IRunnable task, CancellationTokenSource token)
+        {
+            if (!isOpen.get())
+            {
+                throw new InvalidOperationException("CloseableExecutorService is closed");
+            }
+            InternalFutureTask<object> futureTask
+                = new InternalFutureTask<object>(this, new FutureTask<object>(task, token));
             return execService.submit(futureTask);
         }
     }    

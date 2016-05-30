@@ -26,8 +26,6 @@ namespace Org.Apache.CuratorNet.Client
         private readonly ConcurrentQueue<Exception> backgroundExceptions 
             = new ConcurrentQueue<Exception>();
         private volatile ConcurrentQueue<Watcher> parentWatchers = new ConcurrentQueue<Watcher>();
-//        private readonly ConcurrentDictionary<Watcher, Watcher> parentWatchers 
-//            = new ConcurrentDictionary<Watcher, Watcher>();
         private readonly AtomicLong instanceIndex = new AtomicLong();
         private long connectionStartMs;
 
@@ -123,7 +121,7 @@ namespace Org.Apache.CuratorNet.Client
             {
                 if (parentWatcher != watcher)
                 {
-                    newQueue.Enqueue(watcher);
+                    newQueue.Enqueue(parentWatcher);
                 }
             }
             parentWatchers = newQueue;

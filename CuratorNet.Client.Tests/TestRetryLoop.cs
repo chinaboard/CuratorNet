@@ -32,73 +32,58 @@ namespace CuratorNet.Client.Tests
             }
         }
 
-//        [Test]
-//        public void testRetryLoopWithFailure()
-//        {
-//            CuratorZookeeperClient client = new CuratorZookeeperClient(ZkDefaultHosts, 
-//                                                                        DefaultSessionTimeout, 
-//                                                                        DefaultConnectionTimeout, 
-//                                                                        null, 
-//                                                                        new RetryOneTime(1));
-//            client.start();
-//            try
-//            {
-//                int loopCount = 0;
-//                RetryLoop retryLoop = client.newRetryLoop();
-//                outer: while ( retryLoop.shouldContinue()  )
-//                {
-//                    ++loopCount;
-//                    switch ( loopCount )
-//                    {
-//                        case 1:
-//                        {
-//                            server.stop();
-//                            break;
-//                        }
-//
-//                        case 2:
-//                        {
-//                            server.restart();
-//                            break;
-//                        }
-//
-//                        case 3:
-//                        case 4:
-//                        {
-//                            // ignore
-//                            break;
-//                        }
-//
-//                        default:
-//                        {
-//                            Assert.fail();
-//                            break outer;
-//                        }
-//                    }
-//
-//                    try
-//                    {
-//                        client.blockUntilConnectedOrTimedOut();
-//                        client.getZooKeeper().createAsync("/test", 
-//                                                            new byte[]{1,2,3}, 
-//                                                            ZooDefs.Ids.OPEN_ACL_UNSAFE, 
-//                                                            CreateMode.PERSISTENT)
-//                                             .Wait();
-//                        retryLoop.markComplete();
-//                    }
-//                    catch ( Exception e )
-//                    {
-//                        retryLoop.takeException(e);
-//                    }
-//                }
-//
-//                Assert.True(loopCount >= 2);
-//            }
-//            finally
-//            {
-//                client.Dispose();
-//            }
-//        }
+        [Test]
+        public void testRetryLoopWithFailure()
+        {
+            CuratorZookeeperClient client = new CuratorZookeeperClient(ZkDefaultHosts, 
+                                                                        DefaultSessionTimeout, 
+                                                                        DefaultConnectionTimeout, 
+                                                                        null, 
+                                                                        new RetryOneTime(1));
+            client.start();
+            try
+            {
+                int loopCount = 0;
+                RetryLoop retryLoop = client.newRetryLoop();
+                while ( retryLoop.shouldContinue()  )
+                {
+                    ++loopCount;
+                    switch ( loopCount )
+                    {
+                        case 1:
+                        {
+//                            retryLoop.takeException();
+                            break;
+                        }
+
+                        case 2:
+                        {
+                            retryLoop.markComplete();
+                            break;
+                        }
+
+                        case 3:
+                        case 4:
+                        {
+                            // ignore
+                            break;
+                        }
+
+                        default:
+                        {
+                            Assert.Fail();
+                            break;
+                        }
+                    }
+                }
+
+                Assert.True(loopCount >= 2);
+            }
+            finally
+            {
+                client.Dispose();
+            }
+        }
 
         [Test]
         public void testRetryLoop()
@@ -126,7 +111,7 @@ namespace CuratorNet.Client.Tests
                         client.getZooKeeper().createAsync("/test", 
                                                             new byte[]{1,2,3}, 
                                                             ZooDefs.Ids.OPEN_ACL_UNSAFE, 
-                                                            CreateMode.PERSISTENT)
+                                                            CreateMode.EPHEMERAL)
                                              .Wait();
                         retryLoop.markComplete();
                     }

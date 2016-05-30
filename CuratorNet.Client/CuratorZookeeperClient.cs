@@ -329,7 +329,7 @@ namespace Org.Apache.CuratorNet.Client
             TimeSpan waitTimeMs = TimeSpan.FromMilliseconds(connectionTimeoutMs);
             while ( !state.isConnected() && (waitTimeMs > TimeSpan.Zero) )
             {
-                Barrier latch = new Barrier(1);
+                Barrier latch = new Barrier(2);
                 Watcher tempWatcher = new ConnectionSuccessWatcher(latch);
                 state.addParentWatcher(tempWatcher);
                 DateTime startTimeMs = DateTime.Now;
@@ -356,7 +356,7 @@ namespace Org.Apache.CuratorNet.Client
 
             public override Task process(WatchedEvent @event)
             {
-                _barrier.SignalAndWait();
+                _barrier.SignalAndWait(0);
                 return Task.FromResult<object>(null);
             }
         }

@@ -40,7 +40,7 @@ namespace CuratorNet.Test
             {
                 if ( @event.getState() == Watcher.Event.KeeperState.SyncConnected )
                 {
-                    Barrier.SignalAndWait(0);
+                    Barrier.SignalAndWait(1);
                 }
                 return Task.FromResult<object>(null);
             }
@@ -56,13 +56,13 @@ namespace CuratorNet.Test
          */
         public static void kill(ZooKeeper client, String connectString, int maxMs)
         {
-            long startTicks = DateTime.Now.Ticks / 1000;
+//            long startTicks = DateTime.Now.Ticks / 1000;
 
-            Barrier sessionLostLatch = new Barrier(2);
-            Watcher sessionLostWatch = new BarrierWatcher(sessionLostLatch);
-            client.existsAsync("/___CURATOR_KILL_SESSION___" + DateTime.Now.Ticks, 
-                                     sessionLostWatch)
-                  .Wait();
+//            Barrier sessionLostLatch = new Barrier(2);
+//            Watcher sessionLostWatch = new BarrierWatcher(sessionLostLatch);
+//            client.existsAsync("/___CURATOR_KILL_SESSION___" + DateTime.Now.Ticks, 
+//                                     sessionLostWatch)
+//                  .Wait();
 
             Barrier connectionLatch = new Barrier(2);
             Watcher connectionWatcher = new SyncWatcher(connectionLatch);
@@ -86,15 +86,15 @@ namespace CuratorNet.Test
                     zk = null;
                 }
 
-                while ( client.getState() == ZooKeeper.States.CONNECTED 
-                            && !sessionLostLatch.SignalAndWait(100) )
-                {
-                    long elapsed = (DateTime.Now.Ticks / 1000) - startTicks;
-                    if ( elapsed > maxMs )
-                    {
-                        throw new Exception("KillSession timed out waiting for session to expire");
-                    }
-                }
+//                while ( client.getState() == ZooKeeper.States.CONNECTED 
+//                            &&  !sessionLostLatch.SignalAndWait(100) )
+//                {
+//                    long elapsed = (DateTime.Now.Ticks / 1000) - startTicks;
+//                    if ( elapsed > maxMs )
+//                    {
+//                        throw new Exception("KillSession timed out waiting for session to expire");
+//                    }
+//                }
             }
             finally
             {

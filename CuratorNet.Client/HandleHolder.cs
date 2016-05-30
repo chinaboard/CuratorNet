@@ -39,19 +39,20 @@ namespace Org.Apache.CuratorNet.Client
 
         internal ZooKeeper getZooKeeper()
         {
-            return (helper != null) ? helper.getZooKeeper() : null;
+            return helper?.getZooKeeper();
         }
 
         internal String getConnectionString()
         {
-            return (helper != null) ? helper.getConnectionString() : null;
+            return helper?.getConnectionString();
         }
 
         internal bool hasNewConnectionString()
         {
-            String helperConnectionString = (helper != null) ? helper.getConnectionString() : null;
+            String helperConnectionString = helper?.getConnectionString();
             return (helperConnectionString != null) 
-                        && !ensembleProvider.getConnectionString().Equals(helperConnectionString);
+                        && !ensembleProvider.getConnectionString()
+                                            .Equals(helperConnectionString);
         }
 
         internal void closeAndClear()
@@ -64,13 +65,10 @@ namespace Org.Apache.CuratorNet.Client
         {
             try
             {
-                ZooKeeper zooKeeper = (helper != null) ? helper.getZooKeeper() : null;
-                if (zooKeeper != null)
-                {
-                    //Watcher dummyWatcher = new EmptyWatcher();
-                    //zooKeeper.register(dummyWatcher);   // clear the default watcher so that no new events get processed by mistake
-                    zooKeeper.closeAsync().Wait();
-                }
+                ZooKeeper zooKeeper = helper?.getZooKeeper();
+                //Watcher dummyWatcher = new EmptyWatcher();
+                //zooKeeper.register(dummyWatcher);   // clear the default watcher so that no new events get processed by mistake
+                zooKeeper?.closeAsync().Wait();
             }
             catch ( Exception )
             {

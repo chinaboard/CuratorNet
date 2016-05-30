@@ -147,9 +147,9 @@ namespace Org.Apache.CuratorNet.Client
          */
         public static bool isRetryException(Exception exception)
         {
-            if (exception is KeeperException )
+            KeeperException keeperException = exception as KeeperException;
+            if (keeperException != null )
             {
-                KeeperException keeperException = (KeeperException)exception;
                 return shouldRetry(keeperException);
             }
             return false;
