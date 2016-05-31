@@ -73,6 +73,42 @@ namespace Org.Apache.Java.Types.Concurrent
             return task;
         }
 
+        public IFuture<object> schedule(IRunnable command, int delayMs)
+        {
+            if (command == null)
+            {
+                throw new ArgumentNullException(nameof(command));
+            }
+            if (delayMs <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(delayMs));
+            }
+            var envelopedTask = new FutureTask<object>(new ScheduledRunnable(command, delayMs));
+            return submit(envelopedTask);
+        }
+
+        public IFuture<object> scheduleWithFixedDelay(IRunnable command, 
+                                                      int initialDelayMs, 
+                                                      int delayMs)
+        {
+            if (command == null)
+            {
+                throw new ArgumentNullException(nameof(command));
+            }
+            if (delayMs <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(delayMs));
+            }
+            if (initialDelayMs <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(initialDelayMs));
+            }
+            var token = new CancellationTokenSource();
+            var runnable = new RepeatableScheduledRunnable(command, token, initialDelayMs, delayMs);
+            var envelopedTask = new FutureTask<object>(runnable, token);
+            return submit(envelopedTask);
+        }
+
         /// <summary>
         /// Method start pending tasks from pending task queue
         /// </summary>
@@ -116,49 +152,12 @@ namespace Org.Apache.Java.Types.Concurrent
             task.Start(_taskFactory.Scheduler);
         }
 
-        public IFuture<object> schedule(FutureTask<object> command, int delayMs)
-        {
-            if (command == null)
-            {
-                throw new ArgumentNullException(nameof(command));
-            }
-            if (delayMs <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(delayMs));
-            }
-            var envelopedTask = new FutureTask<object>(new ScheduledRunnable(command, delayMs));
-            submit(envelopedTask);
-            return envelopedTask;
-        }
-
-        public IFuture<object> scheduleWithFixedDelay(FutureTask<object> command, 
-                                                        int initialDelayMs, 
-                                                        int delayMs)
-        {
-            if (command == null)
-            {
-                throw new ArgumentNullException(nameof(command));
-            }
-            if (delayMs <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(delayMs));
-            }
-            if (initialDelayMs <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(initialDelayMs));
-            }
-            var runnable = new RepeatableScheduledRunnable(command, initialDelayMs,delayMs);
-            var envelopedTask = new FutureTask<object>(runnable);
-            submit(envelopedTask);
-            return envelopedTask;
-        }
-
         private class ScheduledRunnable : IRunnable
         {
-            private readonly FutureTask<object> _task;
+            private readonly IRunnable _task;
             private readonly int _delayMs;
 
-            internal ScheduledRunnable(FutureTask<object> task, int delayMs)
+            internal ScheduledRunnable(IRunnable task, int delayMs)
             {
                 _task = task;
                 _delayMs = delayMs;
@@ -166,22 +165,25 @@ namespace Org.Apache.Java.Types.Concurrent
 
             public void run()
             {
-                Thread.Sleep(_delayMs);
                 _task.run();
+                Thread.Sleep(_delayMs);
             }
         }
 
         private class RepeatableScheduledRunnable : IRunnable
         {
-            private readonly FutureTask<object> _task;
+            private readonly IRunnable _task;
+            private readonly CancellationTokenSource _token;
             private readonly int _initialDelayMs;
             private readonly int _delayMs;
 
-            internal RepeatableScheduledRunnable(FutureTask<object> task, 
+            internal RepeatableScheduledRunnable(IRunnable task,
+                                                    CancellationTokenSource token,
                                                     int initialDelayMs, 
                                                     int delayMs)
             {
                 _task = task;
+                _token = token;
                 _initialDelayMs = initialDelayMs;
                 _delayMs = delayMs;
             }
@@ -189,12 +191,11 @@ namespace Org.Apache.Java.Types.Concurrent
             public void run()
             {
                 Thread.Sleep(_initialDelayMs);
-                while (!_task.CancelToken.IsCancellationRequested)
+                while (!_token.IsCancellationRequested)
                 {
-                    Thread.Sleep(_delayMs);
                     _task.run();
+                    Thread.Sleep(_delayMs);
                 }
-                _task.cancel();
             }
         }
     }

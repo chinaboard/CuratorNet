@@ -4,9 +4,9 @@ namespace Org.Apache.Java.Types.Concurrent
 {
     public interface IScheduledExecutorService : IExecutorService
     {
-        IFuture<object> schedule(FutureTask<object> command, int delayMs);
+        IFuture<object> schedule(IRunnable command, int delayMs);
 
-        IFuture<object> scheduleWithFixedDelay(FutureTask<object> command,
+        IFuture<object> scheduleWithFixedDelay(IRunnable command,
                                                     int initialDelayMs,
                                                     int delayMs);
     }

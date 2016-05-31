@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Threading;
+using Org.Apache.Java.Types;
 using Org.Apache.Java.Types.Concurrent;
 using Org.Apache.Java.Types.Concurrent.Atomics;
 using Org.Apache.Java.Types.Concurrent.Futures;
@@ -64,20 +65,45 @@ namespace Org.Apache.CuratorNet.Client.Utils
         protected class InternalFutureTask<T> : FutureTask<T> where T : class
         {
             private readonly CloseableExecutorService _executorService;
-            private readonly IRunnableFuture<T> _task;
 
-            internal InternalFutureTask(CloseableExecutorService executorService, IRunnableFuture<T> task) 
+            internal InternalFutureTask(CloseableExecutorService executorService,
+                                        IRunnable task,
+                                        CancellationTokenSource tokenSource)
+                : base(task, tokenSource)
+            {
+                _executorService = executorService;
+                _executorService.futures.TryAdd(this, this);
+            }
+
+            internal InternalFutureTask(CloseableExecutorService executorService, 
+                                        IRunnable task) 
                 : base(task)
             {
                 _executorService = executorService;
-                _task = task;
-                _executorService.futures.TryAdd(task, task);
+                _executorService.futures.TryAdd(this, this);
+            }
+
+            internal InternalFutureTask(CloseableExecutorService executorService,
+                            ICallable<T> task,
+                            CancellationTokenSource tokenSource)
+                : base(task, tokenSource)
+            {
+                _executorService = executorService;
+                _executorService.futures.TryAdd(this, this);
+            }
+
+            internal InternalFutureTask(CloseableExecutorService executorService,
+                                        ICallable<T> task)
+                : base(task)
+            {
+                _executorService = executorService;
+                _executorService.futures.TryAdd(this, this);
             }
 
             protected override void done()
             {
                 IFuture<object> value;
-                _executorService.futures.TryRemove(_task, out value);
+                _executorService.futures.TryRemove(this, out value);
             }
         }
         
@@ -133,7 +159,7 @@ namespace Org.Apache.CuratorNet.Client.Utils
             {
                 throw new InvalidOperationException("CloseableExecutorService is closed");
             }
-            InternalFutureTask<T> futureTask = new InternalFutureTask<T>(this, new FutureTask<T>(task));
+            var futureTask = new InternalFutureTask<T>(this, task);
             return execService.submit(futureTask);
         }
 
@@ -143,8 +169,7 @@ namespace Org.Apache.CuratorNet.Client.Utils
             {
                 throw new InvalidOperationException("CloseableExecutorService is closed");
             }
-            InternalFutureTask<object> futureTask 
-                = new InternalFutureTask<object>(this, new FutureTask<object>(task));
+            var futureTask  = new InternalFutureTask<object>(this, task);
             return execService.submit(futureTask);
         }
 
@@ -154,7 +179,7 @@ namespace Org.Apache.CuratorNet.Client.Utils
             {
                 throw new InvalidOperationException("CloseableExecutorService is closed");
             }
-            InternalFutureTask<T> futureTask = new InternalFutureTask<T>(this, new FutureTask<T>(task, token));
+            var futureTask = new InternalFutureTask<T>(this, task, token);
             return execService.submit(futureTask);
         }
 
@@ -164,8 +189,7 @@ namespace Org.Apache.CuratorNet.Client.Utils
             {
                 throw new InvalidOperationException("CloseableExecutorService is closed");
             }
-            InternalFutureTask<object> futureTask
-                = new InternalFutureTask<object>(this, new FutureTask<object>(task, token));
+            var futureTask = new InternalFutureTask<object>(this, task, token);
             return execService.submit(futureTask);
         }
     }    

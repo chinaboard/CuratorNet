@@ -40,10 +40,8 @@ namespace Org.Apache.CuratorNet.Client.Utils
                 throw new InvalidOperationException("CloseableExecutorService is closed");
             }
 
-            InternalFutureTask<object> futureTask 
-                = new InternalFutureTask<object>(this, new FutureTask<object>(task));
-            _scheduledExecService.schedule(futureTask, delayMs);
-            return futureTask;
+            var futureTask = new InternalFutureTask<object>(this, task);
+            return _scheduledExecService.schedule(futureTask, delayMs);
         }
 
         /**
@@ -72,10 +70,8 @@ namespace Org.Apache.CuratorNet.Client.Utils
             {
                 throw new InvalidOperationException("CloseableExecutorService is closed");
             }
-            InternalFutureTask<object> futureTask
-                = new InternalFutureTask<object>(this, new FutureTask<object>(task));
             IFuture<object> scheduledFuture 
-                = _scheduledExecService.scheduleWithFixedDelay(futureTask, initialDelay, delayMs);
+                = _scheduledExecService.scheduleWithFixedDelay(task, initialDelay, delayMs);
             return new InternalScheduledFutureTask(this, scheduledFuture);
         }
     }

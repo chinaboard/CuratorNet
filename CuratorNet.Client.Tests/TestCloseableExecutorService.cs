@@ -155,7 +155,7 @@ namespace CuratorNet.Client.Tests
                                         CountdownEvent latch)
         {
             CancellationTokenSource token = new CancellationTokenSource();
-            service.submit(new FutureTask<object>(CallableUtils.FromFunc<object>(() =>
+            service.submit(CallableUtils.FromFunc<object>(() =>
             {
                 try
                 {
@@ -177,7 +177,7 @@ namespace CuratorNet.Client.Tests
                     latch.Signal();
                 }
                 return null;
-            })), token);
+            }), token);
         }
 
         private void submitJoinRunnable(CloseableExecutorService service,
@@ -185,7 +185,7 @@ namespace CuratorNet.Client.Tests
                                 CountdownEvent latch)
         {
             CancellationTokenSource token = new CancellationTokenSource();
-            service.submit(new FutureTask<object>(CallableUtils.FromFunc<object>(() =>
+            service.submit(CallableUtils.FromFunc<object>(() =>
             {
                 try
                 {
@@ -210,20 +210,20 @@ namespace CuratorNet.Client.Tests
                     latch.Signal();
                 }
                 return null;
-            })), token);
+            }), token);
         }
 
         private IFuture<object> submitJoinRunnable(CloseableExecutorService service,
                         CountdownEvent startLatch)
         {
             CancellationTokenSource token = new CancellationTokenSource();
-            return service.submit(new FutureTask<object>(CallableUtils.FromFunc<object>(() =>
+            return service.submit(CallableUtils.FromFunc<object>(() =>
             {
                 startLatch.Signal();
                 Console.WriteLine(startLatch.CurrentCount);
                 Thread.CurrentThread.Join();
                 return null;
-            })), token);
+            }), token);
         }
     }
 }
