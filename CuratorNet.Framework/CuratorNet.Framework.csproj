@@ -1,0 +1,125 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{AD02C6D3-C213-4028-831E-616D71CACF0C}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Org.Apache.CuratorNet.Framework</RootNamespace>
+    <AssemblyName>CuratorNet.Framework</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="ZooKeeperNetEx, Version=3.4.8.3, Culture=neutral, PublicKeyToken=42cd15de36f9b993, processorArchitecture=MSIL">
+      <HintPath>..\packages\ZooKeeperNetEx.3.4.8.3\lib\net45\ZooKeeperNetEx.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="API\CuratorEventType.cs" />
+    <Compile Include="API\IACLable.cs" />
+    <Compile Include="API\IACLBackgroundPathable.cs" />
+    <Compile Include="API\IACLBackgroundPathAndBytesable.cs" />
+    <Compile Include="API\IACLCreateModeBackgroundPathAndBytesable.cs" />
+    <Compile Include="API\IACLCreateModePathAndBytesable.cs" />
+    <Compile Include="API\IACLPathAndBytesable.cs" />
+    <Compile Include="API\IACLProvider.cs" />
+    <Compile Include="API\IACLVersionBackgroundPathable.cs" />
+    <Compile Include="API\IBackgroundable.cs" />
+    <Compile Include="API\IBackgroundCallback.cs" />
+    <Compile Include="API\IBackgroundPathable.cs" />
+    <Compile Include="API\IBackgroundPathAndBytesable.cs" />
+    <Compile Include="API\IBackgroundVersionable.cs" />
+    <Compile Include="API\IChildrenDeletable.cs" />
+    <Compile Include="API\ICompressible.cs" />
+    <Compile Include="API\ICompressionProvider.cs" />
+    <Compile Include="API\ICreateBackgroundModeACLable.cs" />
+    <Compile Include="API\ICreateBuilder.cs" />
+    <Compile Include="API\ICreateModable.cs" />
+    <Compile Include="API\ICreateModalPathAndBytesable.cs" />
+    <Compile Include="API\ICuratorEvent.cs" />
+    <Compile Include="API\ICuratorListener.cs" />
+    <Compile Include="API\ICuratorWatcher.cs" />
+    <Compile Include="API\IDecompressible.cs" />
+    <Compile Include="API\IDeleteBuilder.cs" />
+    <Compile Include="API\IErrorListenerPathable.cs" />
+    <Compile Include="API\IErrorListenerPathAndBytesable.cs" />
+    <Compile Include="API\IExistsBuilder.cs" />
+    <Compile Include="API\IExistsBuilderMain.cs" />
+    <Compile Include="API\IGetACLBuilder.cs" />
+    <Compile Include="API\IGetChildrenBuilder.cs" />
+    <Compile Include="API\IGetDataBuilder.cs" />
+    <Compile Include="API\IGetDataWatchBackgroundStatable.cs" />
+    <Compile Include="API\IGuaranteeable.cs" />
+    <Compile Include="API\IPathable.cs" />
+    <Compile Include="API\IPathAndBytesable.cs" />
+    <Compile Include="API\IProtectACLCreateModePathAndBytesable.cs" />
+    <Compile Include="API\ISetACLBuilder.cs" />
+    <Compile Include="API\ISetDataBackgroundVersionable.cs" />
+    <Compile Include="API\ISetDataBuilder.cs" />
+    <Compile Include="API\IStatable.cs" />
+    <Compile Include="API\IStatPathable.cs" />
+    <Compile Include="API\ISyncBuilder.cs" />
+    <Compile Include="API\ITempGetDataBuilder.cs" />
+    <Compile Include="API\IUnhandledErrorListener.cs" />
+    <Compile Include="API\IVersionable.cs" />
+    <Compile Include="API\IVersionPathAndBytesable.cs" />
+    <Compile Include="API\IWatchable.cs" />
+    <Compile Include="API\IWatchPathable.cs" />
+    <Compile Include="API\Transaction\CuratorTransactionResult.cs" />
+    <Compile Include="API\Transaction\ICuratorTransaction.cs" />
+    <Compile Include="API\Transaction\ICuratorTransactionBridge.cs" />
+    <Compile Include="API\Transaction\ICuratorTransactionFinal.cs" />
+    <Compile Include="API\Transaction\ITransactionCheckBuilder.cs" />
+    <Compile Include="API\Transaction\ITransactionCreateBuilder.cs" />
+    <Compile Include="API\Transaction\ITransactionDeleteBuilder.cs" />
+    <Compile Include="API\Transaction\ITransactionSetDataBuilder.cs" />
+    <Compile Include="API\Transaction\OperationType.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Java.Ported.Types\Java.Ported.Types.csproj">
+      <Project>{7e458cab-585f-4984-b903-93a6fbce9824}</Project>
+      <Name>Java.Ported.Types</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
