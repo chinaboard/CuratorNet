@@ -73,6 +73,17 @@ namespace Org.Apache.Java.Types.Concurrent
             return task;
         }
 
+        /// <summary>
+        /// Executes the given command at some time in the future. 
+        /// The command may execute in a new thread, in a pooled thread, 
+        /// or in the calling thread, at the discretion of the Executor implementation.
+        /// </summary>
+        /// <param name="command"></param>
+        public override void execute(IRunnable command)
+        {
+            submit(new FutureTask<object>(command));
+        }
+
         public IFuture<object> schedule(IRunnable command, int delayMs)
         {
             if (command == null)

@@ -26,7 +26,7 @@ namespace Org.Apache.CuratorNet.Framework.API
          * @param callback a functor that will get called when the operation has completed
          * @return this
          */
-        T inBackground(BackgroundCallback callback);
+        T inBackground(IBackgroundCallback callback);
 
         /**
          * Perform the action in the background
@@ -35,7 +35,7 @@ namespace Org.Apache.CuratorNet.Framework.API
          * @param context context object - will be available from the event sent to the listener
          * @return this
          */
-        T inBackground(BackgroundCallback callback, Object context);
+        T inBackground(IBackgroundCallback callback, Object context);
 
         /**
          * Perform the action in the background
@@ -44,7 +44,7 @@ namespace Org.Apache.CuratorNet.Framework.API
          * @param executor executor to use for the background call
          * @return this
          */
-        T inBackground(BackgroundCallback callback, IExecutorService executor);
+        T inBackground(IBackgroundCallback callback, IExecutorService executor);
 
         /**
          * Perform the action in the background
@@ -54,6 +54,6 @@ namespace Org.Apache.CuratorNet.Framework.API
          * @param executor executor to use for the background call
          * @return this
          */
-        T inBackground(BackgroundCallback callback, Object context, IExecutorService executor);
+        T inBackground(IBackgroundCallback callback, Object context, IExecutorService executor);
     }
 }

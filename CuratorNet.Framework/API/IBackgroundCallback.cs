@@ -3,7 +3,7 @@
     /**
      * Functor for an async background operation
      */
-    public interface BackgroundCallback
+    public interface IBackgroundCallback
     {
         /**
          * Called when the async background operation completes
@@ -12,6 +12,6 @@
          * @param event operation result details
          * @throws Exception errors
          */
-        void processResult(CuratorFramework client, CuratorEvent event);
+        void processResult(CuratorFramework client, ICuratorEvent @event);
     }
 }

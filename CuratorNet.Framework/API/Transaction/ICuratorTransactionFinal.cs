@@ -16,6 +16,6 @@ namespace Org.Apache.CuratorNet.Framework.API.Transaction
          * @return operation results
          * @throws Exception errors
          */
-        ICollection<ICuratorTransactionResult> commit();
+        ICollection<CuratorTransactionResult> commit();
     }
 }

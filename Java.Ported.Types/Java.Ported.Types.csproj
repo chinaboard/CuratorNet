@@ -50,6 +50,7 @@
     <Compile Include="Concurrent\Futures\FutureTask.cs" />
     <Compile Include="Concurrent\Futures\IScheduledFuture.cs" />
     <Compile Include="Concurrent\ICallable.cs" />
+    <Compile Include="Concurrent\IExecutor.cs" />
     <Compile Include="Concurrent\IExecutorService.cs" />
     <Compile Include="Concurrent\IRunnable.cs" />
     <Compile Include="Concurrent\IRunnableFuture.cs" />

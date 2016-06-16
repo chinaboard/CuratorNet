@@ -1,10 +1,10 @@
 ﻿namespace Org.Apache.CuratorNet.Framework.API.Transaction
 {
     public interface ITransactionCreateBuilder :
-        PathAndBytesable<CuratorTransactionBridge>,
-        CreateModable<ACLPathAndBytesable<CuratorTransactionBridge>>,
-        ACLPathAndBytesable<CuratorTransactionBridge>,
-        ACLCreateModePathAndBytesable<CuratorTransactionBridge>,
-        Compressible<ACLCreateModePathAndBytesable<CuratorTransactionBridge>>  {
+        PathAndBytesable<ICuratorTransactionBridge>,
+        ICreateModable<IACLPathAndBytesable<ICuratorTransactionBridge>>,
+        IACLPathAndBytesable<ICuratorTransactionBridge>,
+        IACLCreateModePathAndBytesable<ICuratorTransactionBridge>,
+        Compressible<IACLCreateModePathAndBytesable<ICuratorTransactionBridge>>  {
     }
 }

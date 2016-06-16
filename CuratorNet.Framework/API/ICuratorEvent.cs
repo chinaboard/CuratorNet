@@ -19,7 +19,7 @@ namespace Org.Apache.CuratorNet.Framework.API
          *
          * @return event type
          */
-        ICuratorEventType getType();
+        CuratorEventType getType();
 
         /**
          * @return "rc" from async callbacks

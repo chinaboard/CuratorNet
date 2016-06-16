@@ -30,6 +30,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <HintPath>..\packages\NLog.4.3.4\lib\net45\NLog.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -103,12 +107,34 @@
     <Compile Include="API\Transaction\ITransactionDeleteBuilder.cs" />
     <Compile Include="API\Transaction\ITransactionSetDataBuilder.cs" />
     <Compile Include="API\Transaction\OperationType.cs" />
+    <Compile Include="Imps\ACLing.cs" />
+    <Compile Include="Imps\Backgrounding.cs" />
+    <Compile Include="Imps\BackgroundSyncImpl.cs" />
+    <Compile Include="Imps\CreateBuilderImpl.cs" />
+    <Compile Include="Imps\CuratorEventImpl.cs" />
+    <Compile Include="Imps\CuratorFrameworkImpl.cs" />
+    <Compile Include="Imps\CuratorFrameworkState.cs" />
+    <Compile Include="Imps\CuratorMultiTransactionRecord.cs" />
+    <Compile Include="Imps\CuratorTempFrameworkImpl.cs" />
+    <Compile Include="Imps\CuratorTransactionImpl.cs" />
+    <Compile Include="Imps\DefaultACLProvider.cs" />
+    <Compile Include="Imps\DeleteBuilderImpl.cs" />
+    <Compile Include="Imps\ExistsBuilderImpl.cs" />
+    <Compile Include="Imps\FailedDeleteManager.cs" />
+    <Compile Include="Imps\FindAndDeleteProtectedNodeInBackground.cs" />
+    <Compile Include="Imps\GetACLBuilderImpl.cs" />
+    <Compile Include="Imps\GetChildrenBuilderImpl.cs" />
+    <Compile Include="Imps\IBackgroundOperation.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CuratorNet.Client\CuratorNet.Client.csproj">
+      <Project>{0216ECEC-4872-46FE-B37A-D67E65BC5A65}</Project>
+      <Name>CuratorNet.Client</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Java.Ported.Types\Java.Ported.Types.csproj">
       <Project>{7e458cab-585f-4984-b903-93a6fbce9824}</Project>
       <Name>Java.Ported.Types</Name>

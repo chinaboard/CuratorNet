@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Org.Apache.CuratorNet.Framework.API.Transaction
+﻿namespace Org.Apache.CuratorNet.Framework.API.Transaction
 {
     /**
      * <p>
@@ -43,27 +37,27 @@ namespace Org.Apache.CuratorNet.Framework.API.Transaction
          *
          * @return builder object
          */
-        TransactionCreateBuilder create();
+        ITransactionCreateBuilder create();
 
         /**
          * Start a delete builder in the transaction
          *
          * @return builder object
          */
-        TransactionDeleteBuilder delete();
+        ITransactionDeleteBuilder delete();
 
         /**
          * Start a setData builder in the transaction
          *
          * @return builder object
          */
-        TransactionSetDataBuilder setData();
+        ITransactionSetDataBuilder setData();
 
         /**
          * Start a check builder in the transaction
          *ChildData
          * @return builder object
          */
-        TransactionCheckBuilder check();
+        ITransactionCheckBuilder check();
     }
 }

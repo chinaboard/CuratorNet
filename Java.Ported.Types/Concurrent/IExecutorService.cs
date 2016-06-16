@@ -3,7 +3,7 @@ using Org.Apache.Java.Types.Concurrent.Futures;
 
 namespace Org.Apache.Java.Types.Concurrent
 {
-    public interface IExecutorService : IDisposable
+    public interface IExecutorService : IExecutor, IDisposable
     {
         /// <summary>
         /// Submits a value-returning task for execution and returns a Future
