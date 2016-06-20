@@ -24,38 +24,43 @@ namespace Org.Apache.CuratorNet.Framework.Imps
             responseStat = null;
         }
 
+        private class StoringStatsWatchPathable : IWatchPathable<List<String>>
+        {
+            private readonly GetChildrenBuilderImpl _getChildrenBuilderImpl;
+
+            public StoringStatsWatchPathable(GetChildrenBuilderImpl getChildrenBuilderImpl)
+            {
+                _getChildrenBuilderImpl = getChildrenBuilderImpl;
+            }
+
+            public List<String> forPath(String path)
+            {
+                return _getChildrenBuilderImpl.forPath(path);
+            }
+
+            public IPathable<List<String>> watched()
+            {
+                _getChildrenBuilderImpl.watched();
+                return _getChildrenBuilderImpl;
+            }
+
+            public IPathable<List<String>> usingWatcher(Watcher watcher)
+            {
+                _getChildrenBuilderImpl.usingWatcher(watcher);
+                return _getChildrenBuilderImpl;
+            }
+
+            public IPathable<List<String>> usingWatcher(CuratorWatcher watcher)
+            {
+                _getChildrenBuilderImpl.usingWatcher(watcher);
+                return _getChildrenBuilderImpl;
+            }
+        }
+
         public IWatchPathable<List<String>> storingStatIn(Stat stat)
         {
             responseStat = stat;
-            return new WatchPathable<List<String>>()
-            {
-                @Override
-                public List<String> forPath(String path) throws Exception
-                {
-                    return GetChildrenBuilderImpl.this.forPath(path);
-                }
-
-                @Override
-                        public Pathable<List<String>> watched()
-                {
-                    GetChildrenBuilderImpl.this.watched();
-                    return GetChildrenBuilderImpl.this;
-                }
-
-                @Override
-                        public Pathable<List<String>> usingWatcher(Watcher watcher)
-                {
-                    GetChildrenBuilderImpl.this.usingWatcher(watcher);
-                    return GetChildrenBuilderImpl.this;
-                }
-
-                @Override
-                        public Pathable<List<String>> usingWatcher(CuratorWatcher watcher)
-                {
-                    GetChildrenBuilderImpl.this.usingWatcher(watcher);
-                    return GetChildrenBuilderImpl.this;
-                }
-            };
+            return new StoringStatsWatchPathable(this);
         }
 
         public IErrorListenerPathable<List<String>> inBackground(IBackgroundCallback callback, Object context)
@@ -118,7 +123,7 @@ namespace Org.Apache.CuratorNet.Framework.Imps
             return this;
         }
 
-    public void performBackgroundOperation(final OperationAndData<String> operationAndData) 
+    public void performBackgroundOperation(OperationAndData<String> operationAndData) 
     {
         try
         {
@@ -157,7 +162,8 @@ namespace Org.Apache.CuratorNet.Framework.Imps
         List<String> children = null;
         if ( backgrounding.inBackground() )
         {
-            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), null, backgrounding.getContext()), null);
+            var opAndData = new OperationAndData<String>(this, path, backgrounding.getCallback(), null, backgrounding.getContext());
+            client.processBackgroundOperation(opAndData, null);
         }
         else
         {
@@ -172,23 +178,19 @@ namespace Org.Apache.CuratorNet.Framework.Imps
             List<String>    children = RetryLoop.callWithRetry
             (
                 client.getZookeeperClient(),
-                new Callable<List<String>>()
+                CallableUtils.FromFunc(() =>
                 {
-                    @Override
-                    public List<String> call() throws Exception
+                    List<String> childrenNodes;
+                    if (watching.isWatched())
                     {
-                        List<String>    children;
-                                        if ( watching.isWatched() )
-                                        {
-                            children = client.getZooKeeper().getChildren(path, true, responseStat);
-                        }
-                                        else
-                                        {
-                            children = client.getZooKeeper().getChildren(path, watching.getWatcher(), responseStat);
-                        }
-                                        return children;
+                        childrenNodes = client.getZooKeeper().getChildren(path, true, responseStat);
                     }
-                }
+                    else
+                    {
+                        childrenNodes = client.getZooKeeper().getChildren(path, watching.getWatcher(), responseStat);
+                    }
+                    return childrenNodes;
+                })
             );
             trace.commit();
             return children;

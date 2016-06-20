@@ -57,6 +57,7 @@
     <Compile Include="Concurrent\IScheduledExecutorService.cs" />
     <Compile Include="Concurrent\RunnableCallable.cs" />
     <Compile Include="Concurrent\LimitedTaskExecutorService.cs" />
+    <Compile Include="Concurrent\SameThreadTaskExecutorService.cs" />
     <Compile Include="Concurrent\TaskExecutorService.cs" />
     <Compile Include="Concurrent\ExecutorServiceBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

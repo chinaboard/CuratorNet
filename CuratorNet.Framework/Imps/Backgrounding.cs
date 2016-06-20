@@ -49,17 +49,13 @@ namespace Org.Apache.CuratorNet.Framework.Imps
         internal Backgrounding(CuratorFrameworkImpl client, 
                                 IBackgroundCallback callback, 
                                 Object context, 
-                                IExecutorService executor)
-        {
-            this(wrapCallback(client, callback, executor), context);
-        }
+                                IExecutorService executor) 
+            : this(wrapCallback(client, callback, executor), context) { }
 
         internal Backgrounding(CuratorFrameworkImpl client, 
                                 IBackgroundCallback callback, 
-                                IExecutorService executor)
-        {
-            this(wrapCallback(client, callback, executor));
-        }
+                                IExecutorService executor) 
+            : this(wrapCallback(client, callback, executor)) { }
 
         internal Backgrounding(Backgrounding rhs, IUnhandledErrorListener errorListener)
         {

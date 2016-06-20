@@ -161,7 +161,7 @@ namespace Org.Apache.CuratorNet.Client
 
         private static long CurrentMillis
         {
-            get { return DateTime.Now.Ticks / 1000; }
+            get { return DateTimeUtils.GetCurrentMs(); }
         }
 
         internal IEnsembleProvider getEnsembleProvider()

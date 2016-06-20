@@ -65,7 +65,7 @@ namespace Org.Apache.CuratorNet.Framework.Imps
 
         private static long GetCurrentMs()
         {
-            return DateTime.Now.Ticks / 1000;
+            return DateTimeUtils.GetCurrentMs();
         }
 
         private void openConnectionIfNeeded()

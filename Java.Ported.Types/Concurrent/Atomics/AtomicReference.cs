@@ -19,9 +19,9 @@ namespace Org.Apache.Java.Types.Concurrent.Atomics
         /// <param name="expect">Expected value</param>
         /// <param name="update">New value</param>
         /// <returns>Previous value</returns>
-        public T CompareAndSet(T expect, T update)
+        public bool CompareAndSet(T expect, T update)
         {
-            return Interlocked.CompareExchange(ref _value, update, expect);
+            return Interlocked.CompareExchange(ref _value, update, expect) == expect;
         }
         
         public T Get()

@@ -39,6 +39,13 @@ namespace Org.Apache.Java.Types.Concurrent.Atomics
             return Interlocked.Increment(ref _value);
         }
 
+        public long GetAndIncrement()
+        {
+            long oldValue = _value;
+            Interlocked.Increment(ref _value);
+            return oldValue;
+        }
+
         public long DecrementAndGet()
         {
             return Interlocked.Decrement(ref _value);

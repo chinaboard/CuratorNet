@@ -10,7 +10,7 @@
          * @param listener the listener
          * @return this for chaining
          */
-        IPathable<T> withUnhandledErrorListener(UnhandledErrorListener listener);
+        IPathable<T> withUnhandledErrorListener(IUnhandledErrorListener listener);
     }
 
 }

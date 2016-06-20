@@ -70,6 +70,7 @@
     <Compile Include="TimeTrace.cs" />
     <Compile Include="Utils\CloseableExecutorService.cs" />
     <Compile Include="Utils\CloseableScheduledExecutorService.cs" />
+    <Compile Include="Utils\DateTimeUtils.cs" />
     <Compile Include="Utils\DebugUtils.cs" />
     <Compile Include="Utils\CloseableUtils.cs" />
     <Compile Include="Utils\DefaultTracerDriver.cs" />

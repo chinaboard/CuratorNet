@@ -107,6 +107,10 @@
     <Compile Include="API\Transaction\ITransactionDeleteBuilder.cs" />
     <Compile Include="API\Transaction\ITransactionSetDataBuilder.cs" />
     <Compile Include="API\Transaction\OperationType.cs" />
+    <Compile Include="AuthInfo.cs" />
+    <Compile Include="CuratorFramework.cs" />
+    <Compile Include="CuratorFrameworkFactory.cs" />
+    <Compile Include="CuratorTempFramework.cs" />
     <Compile Include="Imps\ACLing.cs" />
     <Compile Include="Imps\Backgrounding.cs" />
     <Compile Include="Imps\BackgroundSyncImpl.cs" />
@@ -119,13 +123,35 @@
     <Compile Include="Imps\CuratorTransactionImpl.cs" />
     <Compile Include="Imps\DefaultACLProvider.cs" />
     <Compile Include="Imps\DeleteBuilderImpl.cs" />
+    <Compile Include="EnsureContainers.cs" />
     <Compile Include="Imps\ExistsBuilderImpl.cs" />
     <Compile Include="Imps\FailedDeleteManager.cs" />
     <Compile Include="Imps\FindAndDeleteProtectedNodeInBackground.cs" />
     <Compile Include="Imps\GetACLBuilderImpl.cs" />
     <Compile Include="Imps\GetChildrenBuilderImpl.cs" />
+    <Compile Include="Imps\GetDataBuilderImpl.cs" />
+    <Compile Include="Imps\GzipCompressionProvider.cs" />
     <Compile Include="Imps\IBackgroundOperation.cs" />
+    <Compile Include="Imps\NamespaceFacade.cs" />
+    <Compile Include="Imps\NamespaceFacadeCache.cs" />
+    <Compile Include="Imps\NamespaceImpl.cs" />
+    <Compile Include="Imps\NamespaceWatchedEvent.cs" />
+    <Compile Include="Imps\NamespaceWatcher.cs" />
+    <Compile Include="Imps\NamespaceWatcherMap.cs" />
+    <Compile Include="Imps\OperationAndData.cs" />
+    <Compile Include="Imps\PathAndBytes.cs" />
+    <Compile Include="Imps\SetACLBuilderImpl.cs" />
+    <Compile Include="Imps\SetDataBuilderImpl.cs" />
+    <Compile Include="Imps\SyncBuilderImpl.cs" />
+    <Compile Include="Imps\TempGetDataBuilderImpl.cs" />
+    <Compile Include="Imps\Watching.cs" />
+    <Compile Include="Listen\ListenerContainer.cs" />
+    <Compile Include="Listen\ListenerEntry.cs" />
+    <Compile Include="Listen\Listenable.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="State\ConnectionState.cs" />
+    <Compile Include="State\ConnectionStateManager.cs" />
+    <Compile Include="State\IConnectionStateListener.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

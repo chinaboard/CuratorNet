@@ -11,17 +11,17 @@ namespace Org.Apache.CuratorNet.Framework.Imps
     
         internal volatile FailedDeleteManagerListener debugListener = null;
 
-        interface FailedDeleteManagerListener
+        internal interface FailedDeleteManagerListener
         {
             void pathAddedForDelete(String path);
         }
 
-        FailedDeleteManager(CuratorFramework client)
+        internal FailedDeleteManager(CuratorFramework client)
         {
             this.client = client;
         }
 
-        void addFailedDelete(String path)
+        internal void addFailedDelete(String path)
         {
             if (debugListener != null)
             {
