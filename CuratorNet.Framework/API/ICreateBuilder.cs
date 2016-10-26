@@ -4,16 +4,16 @@ namespace Org.Apache.CuratorNet.Framework.API
 {
     public interface ICreateBuilder :
         IBackgroundPathAndBytesable<String>,
-        ICreateModable<ACLBackgroundPathAndBytesable<String>>,
+        ICreateModable<IACLBackgroundPathAndBytesable<String>>,
         IACLCreateModeBackgroundPathAndBytesable<String>,
-        Compressible<CreateBackgroundModeACLable>
+        Compressible<ICreateBackgroundModeACLable>
     {
         /**
          * Causes any parent nodes to get created if they haven't already been
          *
          * @return this
          */
-        IProtectACLCreateModePathAndBytesable<String> creatingParentsIfNeeded();
+        ProtectACLCreateModePathAndBytesable<String> creatingParentsIfNeeded();
 
         /**
          * Causes any parent nodes to get created using {@link CreateMode#CONTAINER} if they haven't already been.
@@ -23,7 +23,7 @@ namespace Org.Apache.CuratorNet.Framework.API
          *
          * @return this
          */
-        IProtectACLCreateModePathAndBytesable<String> creatingParentContainersIfNeeded();
+        ProtectACLCreateModePathAndBytesable<String> creatingParentContainersIfNeeded();
 
         /**
          * @deprecated this has been generalized to support all create modes. Instead, use:

@@ -1,6 +1,6 @@
 ﻿namespace Org.Apache.CuratorNet.Framework.API
 {
-    public interface ErrorListenerPathAndBytesable<T> : IPathAndBytesable<T>
+    public interface ErrorListenerPathAndBytesable<T> : PathAndBytesable<T>
     {
         /**
          * Set an error listener for this background operation. If an exception
@@ -10,6 +10,6 @@
          * @param listener the listener
          * @return this for chaining
          */
-        IPathAndBytesable<T> withUnhandledErrorListener(UnhandledErrorListener listener);
+        PathAndBytesable<T> withUnhandledErrorListener(IUnhandledErrorListener listener);
     }
 }

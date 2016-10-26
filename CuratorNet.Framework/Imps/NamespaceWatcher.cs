@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using org.apache.zookeeper;
 using Org.Apache.CuratorNet.Client.Utils;
 using Org.Apache.CuratorNet.Framework.API;
@@ -11,14 +12,14 @@ namespace Org.Apache.CuratorNet.Framework.Imps
         private volatile Watcher actualWatcher;
         private volatile CuratorWatcher curatorWatcher;
 
-        NamespaceWatcher(CuratorFrameworkImpl client, Watcher actualWatcher)
+        internal NamespaceWatcher(CuratorFrameworkImpl client, Watcher actualWatcher)
         {
             this.client = client;
             this.actualWatcher = actualWatcher;
             this.curatorWatcher = null;
         }
 
-        NamespaceWatcher(CuratorFrameworkImpl client, CuratorWatcher curatorWatcher)
+        internal NamespaceWatcher(CuratorFrameworkImpl client, CuratorWatcher curatorWatcher)
         {
             this.client = client;
             this.actualWatcher = null;
@@ -32,7 +33,7 @@ namespace Org.Apache.CuratorNet.Framework.Imps
             curatorWatcher = null;
         }
 
-        public void process(WatchedEvent @event)
+        public override Task process(WatchedEvent @event)
         {
             if (client != null)
             {

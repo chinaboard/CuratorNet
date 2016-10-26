@@ -3,6 +3,8 @@ using org.apache.zookeeper;
 using Org.Apache.CuratorNet.Client;
 using Org.Apache.CuratorNet.Client.Utils;
 using Org.Apache.CuratorNet.Framework.API;
+using Org.Apache.CuratorNet.Framework.Listen;
+using Org.Apache.CuratorNet.Framework.State;
 
 namespace Org.Apache.CuratorNet.Framework.Imps
 {
@@ -10,13 +12,14 @@ namespace Org.Apache.CuratorNet.Framework.Imps
     {
         private readonly CuratorFrameworkImpl client;
         private readonly NamespaceImpl @namespace;
-        private readonly FailedDeleteManager failedDeleteManager = new FailedDeleteManager(this);
+        private readonly FailedDeleteManager failedDeleteManager;
 
-        NamespaceFacade(CuratorFrameworkImpl client, string @namespace)
+        internal NamespaceFacade(CuratorFrameworkImpl client, string @namespace) 
+            : base(client)
         {
-            base(client);
             this.client = client;
             this.@namespace = new NamespaceImpl(client, @namespace);
+            failedDeleteManager = new FailedDeleteManager(this);
         }
 
         public CuratorFramework nonNamespaceView()
@@ -44,7 +47,7 @@ namespace Org.Apache.CuratorNet.Framework.Imps
             throw new NotImplementedException();
         }
 
-        public Listenable<ConnectionStateListener> getConnectionStateListenable()
+        public Listenable<IConnectionStateListener> getConnectionStateListenable()
         {
             return client.getConnectionStateListenable();
         }
@@ -69,37 +72,37 @@ namespace Org.Apache.CuratorNet.Framework.Imps
             return client.getZookeeperClient();
         }
 
-        RetryLoop newRetryLoop()
+        internal RetryLoop newRetryLoop()
         {
             return client.newRetryLoop();
         }
 
-        ZooKeeper getZooKeeper()
+        internal ZooKeeper getZooKeeper()
         {
             return client.getZooKeeper();
         }
 
-        void processBackgroundOperation<DATA_TYPE>(OperationAndData<DATA_TYPE> operationAndData, ICuratorEvent @event)
+        internal void processBackgroundOperation<DATA_TYPE>(OperationAndData<DATA_TYPE> operationAndData, ICuratorEvent @event)
         {
             client.processBackgroundOperation(operationAndData, @event);
         }
 
-        void logError(String reason, Exception e)
+        internal void logError(String reason, Exception e)
         {
             client.logError(reason, e);
         }
 
-        String unfixForNamespace(String path)
+        internal String unfixForNamespace(String path)
         {
             return @namespace.unfixForNamespace(path);
         }
 
-        String fixForNamespace(String path)
+        internal String fixForNamespace(String path)
         {
             return @namespace.fixForNamespace(path, false);
         }
 
-        String fixForNamespace(String path, bool isSequential)
+        internal String fixForNamespace(String path, bool isSequential)
         {
             return @namespace.fixForNamespace(path, isSequential);
         }
@@ -109,7 +112,7 @@ namespace Org.Apache.CuratorNet.Framework.Imps
             return @namespace.newNamespaceAwareEnsurePath(path);
         }
 
-        FailedDeleteManager getFailedDeleteManager()
+        internal FailedDeleteManager getFailedDeleteManager()
         {
             return failedDeleteManager;
         }

@@ -67,7 +67,7 @@ namespace Org.Apache.CuratorNet.Framework.Imps
 
         public List<ACL> getACLList()
         {
-            return aclList;
+            return new List<ACL>(aclList);
         }
 
         internal CuratorEventImpl(CuratorFrameworkImpl client, 

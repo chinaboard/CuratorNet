@@ -34,7 +34,7 @@ namespace Org.Apache.CuratorNet.Framework.Imps
         private readonly IACLProvider aclProvider;
         private readonly NamespaceFacadeCache namespaceFacadeCache;
         private readonly NamespaceWatcherMap namespaceWatcherMap;
-        private readonly bool useContainerParentsIfAvailable;
+        private readonly bool _useContainerParentsIfAvailable;
 
         private volatile IExecutorService executorService;
         private readonly AtomicBoolean logAsErrorConnectionErrors = new AtomicBoolean(false);
@@ -168,7 +168,7 @@ namespace Org.Apache.CuratorNet.Framework.Imps
             @namespace = new NamespaceImpl(this, null);
             state = parent.state;
             authInfos = parent.authInfos;
-            useContainerParentsIfAvailable = parent.useContainerParentsIfAvailable;
+            _useContainerParentsIfAvailable = parent._useContainerParentsIfAvailable;
         }
 
         public void createContainers(String path)
@@ -358,7 +358,7 @@ namespace Org.Apache.CuratorNet.Framework.Imps
             return new CuratorTransactionImpl(this);
         }
 
-        public Listenable<ConnectionStateListener> getConnectionStateListenable()
+        public Listenable<IConnectionStateListener> getConnectionStateListenable()
         {
             return connectionStateManager.getListenable();
         }
@@ -406,32 +406,33 @@ namespace Org.Apache.CuratorNet.Framework.Imps
             return aclProvider;
         }
 
-        FailedDeleteManager getFailedDeleteManager()
+        internal FailedDeleteManager getFailedDeleteManager()
         {
             return failedDeleteManager;
         }
 
-        RetryLoop newRetryLoop()
+        internal RetryLoop newRetryLoop()
         {
             return client.newRetryLoop();
         }
 
-        ZooKeeper getZooKeeper()
+        internal ZooKeeper getZooKeeper()
         {
             return client.getZooKeeper();
         }
 
-        ICompressionProvider getCompressionProvider()
+        internal ICompressionProvider getCompressionProvider()
         {
             return compressionProvider;
         }
 
-        bool useContainerParentsIfAvailable()
+        internal bool useContainerParentsIfAvailable()
         {
-            return useContainerParentsIfAvailable;
+            return _useContainerParentsIfAvailable;
         }
 
-        internal void processBackgroundOperation<DATA_TYPE>(OperationAndData<DATA_TYPE> operationAndData, CuratorEvent @event)
+        internal void processBackgroundOperation<DATA_TYPE>(OperationAndData<DATA_TYPE> operationAndData, 
+                                                            ICuratorEvent @event)
         {
             bool isInitialExecution = (@event == null);
             if (isInitialExecution)

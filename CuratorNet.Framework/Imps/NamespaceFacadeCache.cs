@@ -1,22 +1,13 @@
-﻿namespace Org.Apache.CuratorNet.Framework.Imps
+﻿using System.Runtime.Caching;
+
+namespace Org.Apache.CuratorNet.Framework.Imps
 {
     internal class NamespaceFacadeCache
     {
         private readonly CuratorFrameworkImpl                  client;
         private readonly NamespaceFacade                       nullNamespace;
-        private readonly CacheLoader<string, NamespaceFacade>  loader = new CacheLoader<string, NamespaceFacade>()
-        {
-            public NamespaceFacade load(string @namespace)
-            {
-                return new NamespaceFacade(client, @namespace);
-            }
-        };
-
-        private readonly LoadingCache<String, NamespaceFacade> cache 
-                = CacheBuilder.newBuilder()
-                                .expireAfterAccess(5, TimeUnit.MINUTES) // does this need config? probably not
-                                .build(loader);
-
+        private readonly MemoryCache _cache = new MemoryCache(nameof(NamespaceFacadeCache));
+        
         internal NamespaceFacadeCache(CuratorFrameworkImpl client)
         {
             this.client = client;
@@ -25,14 +16,17 @@
 
         internal NamespaceFacade get(string @namespace)
         {
-            try
+            if (@namespace == null)
             {
-                return (@namespace != null) ? cache.get(@namespace) : nullNamespace;
+                return nullNamespace;
             }
-            catch ( ExecutionException e )
+            var namespaceFacade = (NamespaceFacade)_cache[@namespace];
+            if (namespaceFacade == null)
             {
-                throw new RuntimeException(e);  // should never happen
+                namespaceFacade = new NamespaceFacade(client, @namespace);
+                _cache[@namespace] = namespaceFacade;
             }
+            return namespaceFacade;
         }
     }
 }

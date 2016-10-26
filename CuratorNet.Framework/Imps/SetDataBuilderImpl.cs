@@ -191,23 +191,54 @@ namespace Org.Apache.CuratorNet.Framework.Imps
             try
             {
                 TimeTrace trace = client.getZookeeperClient().startTracer("SetDataBuilderImpl-Background");
+                object taskCtx = backgrounding.getContext();
                 Task<Stat> task = client.getZooKeeper().setDataAsync
                 (
                      operationAndData.getData().getPath(),
                      operationAndData.getData().getData(),
-                     version,
-                     new AsyncCallback.StatCallback()
-                     {
-                         public void processResult(int rc, String path, Object ctx, Stat stat)
-                         {
-                             trace.commit();
-                             ICuratorEvent @event = new CuratorEventImpl(client, CuratorEventType.SET_DATA, rc, path, null, ctx, stat, null, null, null, null);
-                             client.processBackgroundOperation(operationAndData, @event);
-                         };
-                    },
-                    backgrounding.getContext()
+                     version//,
+//                     new AsyncCallback.StatCallback()
+//                     {
+//                         public void processResult(int rc, String path, Object ctx, Stat stat)
+//                         {
+//                             trace.commit();
+//                             ICuratorEvent @event = new CuratorEventImpl(client, CuratorEventType.SET_DATA, rc, path, null, ctx, stat, null, null, null, null);
+//                             client.processBackgroundOperation(operationAndData, @event);
+//                         };
+//                    },
+//                    backgrounding.getContext()
                 );
-                task.Wait();
+                task.ContinueWith(statTask =>
+                {
+                    trace.commit();
+                    int errorCode = 0;
+                    if (statTask.IsFaulted)
+                    {
+                        if (!(statTask.Exception.InnerException is KeeperException))
+                        {
+                            throw new Exception($"{nameof(SetDataBuilderImpl)}." +
+                                                $"{nameof(performBackgroundOperation)} operation failed " +
+                                                $"with unexpected exception of type " +
+                                                $"{statTask.Exception.InnerException.GetType().FullName}." +
+                                                $"Expected type {nameof(KeeperException)}");
+                        }
+                        KeeperException keeperException 
+                            = (KeeperException) statTask.Exception.InnerException;
+                        errorCode = (int) keeperException.getCode();
+                    }
+                    ICuratorEvent @event = new CuratorEventImpl(client, 
+                                                                CuratorEventType.SET_DATA, 
+                                                                errorCode,
+                                                                operationAndData.getData().getPath(),
+                                                                null, 
+                                                                taskCtx, 
+                                                                statTask.Result, 
+                                                                null, 
+                                                                null, 
+                                                                null, 
+                                                                null);
+                    client.processBackgroundOperation(operationAndData, @event);
+                });
             }
             catch ( Exception e )
             {

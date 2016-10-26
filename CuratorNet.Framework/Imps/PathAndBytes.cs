@@ -5,7 +5,7 @@
         private readonly string path;
         private readonly byte[] data;
 
-        PathAndBytes(string path, byte[] data)
+        internal PathAndBytes(string path, byte[] data)
         {
             this.path = path;
             this.data = data;

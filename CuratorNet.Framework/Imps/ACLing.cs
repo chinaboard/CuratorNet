@@ -1,26 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
 using org.apache.zookeeper.data;
+using Org.Apache.CuratorNet.Framework.API;
 
 namespace Org.Apache.CuratorNet.Framework.Imps
 {
     internal class ACLing
     {
         private readonly List<ACL>     aclList;
-        private readonly ACLProvider   aclProvider;
+        private readonly IACLProvider   aclProvider;
 
-        ACLing(ACLProvider aclProvider)
-        {
-            this(aclProvider, null);
-        }
-
-        ACLing(ACLProvider aclProvider, List<ACL> aclList)
+        internal ACLing(IACLProvider aclProvider)
         {
             this.aclProvider = aclProvider;
-            this.aclList = (aclList != null) ? ImmutableList.copyOf(aclList) : null;
         }
 
-        List<ACL> getAclList(String path)
+        internal ACLing(IACLProvider aclProvider, List<ACL> aclList)
+        {
+            this.aclProvider = aclProvider;
+            this.aclList = (aclList != null) ? new List<ACL>(aclList) : null;
+        }
+
+        internal List<ACL> getAclList(String path)
         {
             List<ACL> localAclList = aclList;
             do

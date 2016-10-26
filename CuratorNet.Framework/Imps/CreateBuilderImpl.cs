@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using org.apache.zookeeper;
 using org.apache.zookeeper.data;
 using Org.Apache.CuratorNet.Client;
@@ -29,7 +30,7 @@ namespace Org.Apache.CuratorNet.Framework.Imps
 
         static readonly String PROTECTED_PREFIX = "_c_";
 
-        CreateBuilderImpl(CuratorFrameworkImpl client)
+        internal CreateBuilderImpl(CuratorFrameworkImpl client)
         {
             this.client = client;
             createMode = CreateMode.PERSISTENT;
@@ -77,23 +78,30 @@ namespace Org.Apache.CuratorNet.Framework.Imps
 
             public ICuratorTransactionBridge forPath(String path)
             {
-                return forPath(path, client.getDefaultData());
+                return forPath(path, _createBuilderImpl.client.getDefaultData());
             }
 
             public ICuratorTransactionBridge forPath(String path, byte[] data)
             {
-                if (compress)
+                if (_createBuilderImpl.compress)
                 {
-                    data = client.getCompressionProvider().compress(path, data);
+                    data = _createBuilderImpl.client
+                                             .getCompressionProvider()
+                                             .compress(path, data);
                 }
 
-                String fixedPath = client.fixForNamespace(path);
-                _transaction.add(Op.create(fixedPath, data, acling.getAclList(path), createMode), OperationType.CREATE, path);
+                String fixedPath = _createBuilderImpl.client.fixForNamespace(path);
+                _transaction.add(Op.create(fixedPath, 
+                                           data, 
+                                           _createBuilderImpl.acling.getAclList(path), 
+                                           _createBuilderImpl.createMode),
+                                 OperationType.CREATE, path);
                 return _curatorTransaction;
             }
         }
 
-        ITransactionCreateBuilder asTransactionCreateBuilder(CuratorTransactionImpl curatorTransaction, 
+        internal ITransactionCreateBuilder asTransactionCreateBuilder(
+                                                                CuratorTransactionImpl curatorTransaction, 
                                                                 CuratorMultiTransactionRecord transaction)
         {
             return new TransactionCreateBuilder(this, curatorTransaction, transaction);
@@ -363,7 +371,6 @@ namespace Org.Apache.CuratorNet.Framework.Imps
         {
             setProtected();
             createMode = CreateMode.EPHEMERAL_SEQUENTIAL;
-
             return new ACLPathAndBytesable(this);
         }
 
@@ -373,13 +380,16 @@ namespace Org.Apache.CuratorNet.Framework.Imps
             return this;
         }
 
-        public ErrorListenerPathAndBytesable<String> inBackground(IBackgroundCallback callback, Object context)
+        public ErrorListenerPathAndBytesable<String> inBackground(IBackgroundCallback callback, 
+                                                                  Object context)
         {
             backgrounding = new Backgrounding(callback, context);
             return this;
         }
 
-        public ErrorListenerPathAndBytesable<String> inBackground(IBackgroundCallback callback, Object context, IExecutor executor)
+        public ErrorListenerPathAndBytesable<String> inBackground(IBackgroundCallback callback, 
+                                                                  Object context, 
+                                                                  IExecutor executor)
         {
             backgrounding = new Backgrounding(client, callback, context, executor);
             return this;
@@ -391,7 +401,8 @@ namespace Org.Apache.CuratorNet.Framework.Imps
             return this;
         }
 
-        public ErrorListenerPathAndBytesable<String> inBackground(IBackgroundCallback callback, IExecutor executor)
+        public ErrorListenerPathAndBytesable<String> inBackground(IBackgroundCallback callback, 
+                                                                  IExecutor executor)
         {
             backgrounding = new Backgrounding(client, callback, executor);
             return this;
@@ -458,12 +469,14 @@ namespace Org.Apache.CuratorNet.Framework.Imps
                      * CURATOR-45 + CURATOR-79: we don't know if the create operation was successful or not,
                      * register the znode to be sure it is deleted later.
                      */
-                    new FindAndDeleteProtectedNodeInBackground(client, ZKPaths.getPathAndNode(adjustedPath).getPath(), protectedId).execute();
+                    new FindAndDeleteProtectedNodeInBackground(client, 
+                                                               ZKPaths.getPathAndNode(adjustedPath).getPath(),
+                                                               protectedId).execute();
                     /*
                     * The current UUID is scheduled to be deleted, it is not safe to use it again.
                     * If this builder is used again later create a new UUID
                     */
-                    protectedId = UUID.randomUUID().toString();
+                    protectedId = Guid.NewGuid().ToString();
                 }
                 throw e;
             }
@@ -514,7 +527,7 @@ namespace Org.Apache.CuratorNet.Framework.Imps
         static void backgroundCreateParentsThenNode<T>(CuratorFrameworkImpl client, 
                                                         OperationAndData<T> mainOperationAndData, 
                                                         String path, 
-                                                        IBackgrounding backgrounding, 
+                                                        Backgrounding backgrounding, 
                                                         bool createParentsAsContainers)
         {
             IBackgroundOperation<T> operation = new IBackgroundOperation<T>()
@@ -533,7 +546,11 @@ namespace Org.Apache.CuratorNet.Framework.Imps
                     client.queueOperation(mainOperationAndData);
                 }
             };
-            OperationAndData<T> parentOperation = new OperationAndData<T>(operation, mainOperationAndData.getData(), null, null, backgrounding.getContext());
+            OperationAndData<T> parentOperation = new OperationAndData<T>(operation, 
+                                                                          mainOperationAndData.getData(), 
+                                                                          null, 
+                                                                          null, 
+                                                                          backgrounding.getContext());
             client.queueOperation(parentOperation);
         }
 
@@ -542,14 +559,24 @@ namespace Org.Apache.CuratorNet.Framework.Imps
             path = client.unfixForNamespace(path);
             name = client.unfixForNamespace(name);
 
-            CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.CREATE, rc, path, name, ctx, null, null, null, null, null);
-            client.processBackgroundOperation(operationAndData, event);
+            ICuratorEvent @event = new CuratorEventImpl(client, 
+                                                        CuratorEventType.CREATE, 
+                                                        rc, 
+                                                        path, 
+                                                        name, 
+                                                        ctx, 
+                                                        null, 
+                                                        null, 
+                                                        null, 
+                                                        null, 
+                                                        null);
+            client.processBackgroundOperation(operationAndData, @event);
         }
 
         private void setProtected()
         {
             doProtected = true;
-            protectedId = UUID.randomUUID().toString();
+            protectedId = Guid.NewGuid().ToString();
         }
 
         class ACLPathAndBytesable : IACLPathAndBytesable<String>
@@ -618,7 +645,9 @@ namespace Org.Apache.CuratorNet.Framework.Imps
         private void pathInBackground(String path, byte[] data, String givenPath)
         {
             AtomicBoolean firstTime = new AtomicBoolean(true);
-            OperationAndData<PathAndBytes> operationAndData = new OperationAndData<PathAndBytes>(this, new PathAndBytes(path, data), backgrounding.getCallback(),
+            var operationAndData = new OperationAndData<PathAndBytes>(this, 
+                                                                      new PathAndBytes(path, data), 
+                                                                      backgrounding.getCallback(),
             new OperationAndData.ErrorCallback<PathAndBytes>()
             {
                 public void retriesExhausted(OperationAndData<PathAndBytes> operationAndData)
@@ -689,47 +718,58 @@ namespace Org.Apache.CuratorNet.Framework.Imps
             AtomicBoolean firstTime = new AtomicBoolean(true);
             String returnPath = RetryLoop.callWithRetry(
             client.getZookeeperClient(),
-            new Callable<String>()
-            {
-                    @Override
-                    public String call()
-                    {
-                        bool localFirstTime = firstTime.getAndSet(false) && !debugForceFindProtectedNode;
-                        String createdPath = null;
-                        if ( !localFirstTime && doProtected )
-                        {
-                            debugForceFindProtectedNode = false;
-                            createdPath = findProtectedNodeInForeground(path);
-                        }
+            CallableUtils.FromFunc(
+               () =>
+               {
+                   bool localFirstTime = firstTime.getAndSet(false) && !debugForceFindProtectedNode;
+                   String createdPath = null;
+                   if ( !localFirstTime && doProtected )
+                   {
+                       debugForceFindProtectedNode = false;
+                       createdPath = findProtectedNodeInForeground(path);
+                   }
 
-                        if ( createdPath == null )
-                        {
-                            try
-                            {
-                                createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode);
-                            }
-                            catch (KeeperException.NoNodeException e)
-                            {
-                                if (createParentsIfNeeded)
-                                {
-                                    ZKPaths.mkdirs(client.getZooKeeper(), path, false, client.getAclProvider(), createParentsAsContainers);
-                                    createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode);
-                                }
-                                else
-                                {
-                                    throw e;
-                                }
-                            }
-                        }
+                   if ( createdPath == null )
+                   {
+                       try
+                       {
+                           Task<string> createTask = client.getZooKeeper().createAsync(path, 
+                                                                           data, 
+                                                                           acling.getAclList(path), 
+                                                                           createMode);
+                           createTask.Wait();
+                           createdPath = createTask.Result;
+                       }
+                       catch (KeeperException.NoNodeException e)
+                       {
+                           if (createParentsIfNeeded)
+                           {
+                               ZKPaths.mkdirs(client.getZooKeeper(), 
+                                              path, 
+                                              false, 
+                                              client.getAclProvider(), 
+                                              createParentsAsContainers);
+                               Task<string> createTask = client.getZooKeeper().createAsync(path, 
+                                                                               data, 
+                                                                               acling.getAclList(path), 
+                                                                               createMode);
+                               createTask.Wait();
+                               createdPath = createTask.Result;
+                           }
+                           else
+                           {
+                               throw e;
+                           }
+                       }
+                   }
 
-                        if ( failNextCreateForTesting )
-                        {
-                            failNextCreateForTesting = false;
-                            throw new KeeperException.ConnectionLossException();
-                        }
-                        return createdPath;
-                    }
-            });
+                   if ( failNextCreateForTesting )
+                   {
+                       failNextCreateForTesting = false;
+                       throw new KeeperException.ConnectionLossException();
+                   }
+                   return createdPath;                                       
+               }));
             trace.commit();
             return returnPath;
         }
@@ -741,26 +781,24 @@ namespace Org.Apache.CuratorNet.Framework.Imps
             String returnPath = RetryLoop.callWithRetry
             (
                 client.getZookeeperClient(),
-                new Callable<String>()
-                {
-                    @Override
-                    public String call()
-                    {
-                        String foundNode = null;
-                        try
-                        {
-                            final ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
-                            List<String> children = client.getZooKeeper().getChildren(pathAndNode.getPath(), false);
-                            foundNode = findNode(children, pathAndNode.getPath(), protectedId);
-                        }
-                        catch ( KeeperException.NoNodeException ignore )
-                        {
-                            // ignore
-                        }
-                        return foundNode;
-                    }
-                }
-            );
+                CallableUtils.FromFunc(() =>
+                   {
+                       String foundNode = null;
+                       try
+                       {
+                           ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
+                           Task<ChildrenResult> childrenTask 
+                               = client.getZooKeeper().getChildrenAsync(pathAndNode.getPath());
+                           childrenTask.Wait();
+                           List<String> children = childrenTask.Result.Children;
+                           foundNode = findNode(children, pathAndNode.getPath(), protectedId);
+                       }
+                       catch ( KeeperException.NoNodeException ignore )
+                       {
+                           // ignore
+                       }
+                       return foundNode;
+                   }));
 
             trace.commit();
             return returnPath;
@@ -788,19 +826,7 @@ namespace Org.Apache.CuratorNet.Framework.Imps
         static String findNode(List<String> children, String path, String protectedId)
         {
             String protectedPrefix = getProtectedPrefix(protectedId);
-            String foundNode = Iterables.find
-            (
-                children,
-                new Predicate<String>()
-                {
-                        @Override
-                        public boolean apply(String node)
-                        {
-                            return node.startsWith(protectedPrefix);
-                        }
-                },
-                null
-            );
+            String foundNode = children.Find(node => node.StartsWith(protectedPrefix));
             if ( foundNode != null )
             {
                 foundNode = ZKPaths.makePath(path, foundNode);

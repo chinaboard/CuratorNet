@@ -49,12 +49,12 @@ namespace Org.Apache.CuratorNet.Framework.Imps
         internal Backgrounding(CuratorFrameworkImpl client, 
                                 IBackgroundCallback callback, 
                                 Object context, 
-                                IExecutorService executor) 
+                                IExecutor executor) 
             : this(wrapCallback(client, callback, executor), context) { }
 
         internal Backgrounding(CuratorFrameworkImpl client, 
                                 IBackgroundCallback callback, 
-                                IExecutorService executor) 
+                                IExecutor executor) 
             : this(wrapCallback(client, callback, executor)) { }
 
         internal Backgrounding(Backgrounding rhs, IUnhandledErrorListener errorListener)
@@ -77,22 +77,22 @@ namespace Org.Apache.CuratorNet.Framework.Imps
             errorListener = null;
         }
 
-        bool inBackground()
+        internal bool inBackground()
         {
             return inBackgrnd;
         }
 
-        Object getContext()
+        internal Object getContext()
         {
             return context;
         }
 
-        IBackgroundCallback getCallback()
+        internal IBackgroundCallback getCallback()
         {
             return callback;
         }
 
-        void checkError(Exception e)
+        internal void checkError(Exception e)
         {
             if ( e != null )
             {
@@ -136,7 +136,7 @@ namespace Org.Apache.CuratorNet.Framework.Imps
                         var keeperException = e as KeeperException;
                         if ( keeperException != null )
                         {
-                            _client.validateConnection(_client.codeToState(keeperException.code()));
+                            _client.validateConnection(_client.codeToState(keeperException));
                         }
                         _client.logError("Background operation result handling threw exception", e);
                     }

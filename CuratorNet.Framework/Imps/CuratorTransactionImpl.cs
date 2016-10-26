@@ -18,7 +18,7 @@ namespace Org.Apache.CuratorNet.Framework.Imps
 
         private bool isCommitted = false;
 
-        CuratorTransactionImpl(CuratorFrameworkImpl client)
+        internal CuratorTransactionImpl(CuratorFrameworkImpl client)
         {
             this.client = client;
             transaction = new CuratorMultiTransactionRecord();

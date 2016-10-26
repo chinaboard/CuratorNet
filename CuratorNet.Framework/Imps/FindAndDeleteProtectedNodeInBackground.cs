@@ -17,7 +17,7 @@ namespace Org.Apache.CuratorNet.Framework.Imps
         private readonly String namespaceAdjustedParentPath;
         private readonly String protectedId;
 
-        FindAndDeleteProtectedNodeInBackground(CuratorFrameworkImpl client, 
+        internal FindAndDeleteProtectedNodeInBackground(CuratorFrameworkImpl client, 
                                                 String namespaceAdjustedParentPath, 
                                                 String protectedId)
         {

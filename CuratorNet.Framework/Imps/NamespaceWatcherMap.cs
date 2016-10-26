@@ -7,13 +7,11 @@ namespace Org.Apache.CuratorNet.Framework.Imps
 {
     internal class NamespaceWatcherMap : IDisposable
     {
-        private readonly ConcurrentDictionary<object, NamespaceWatcher> map = CacheBuilder.newBuilder()
-            .weakValues()
-            .build()
-            .asMap();
+        private readonly ConcurrentDictionary<object, WeakReference<NamespaceWatcher>> map 
+            = new ConcurrentDictionary<object, WeakReference<NamespaceWatcher>>();
         private readonly CuratorFrameworkImpl client;
 
-        NamespaceWatcherMap(CuratorFrameworkImpl client)
+        internal NamespaceWatcherMap(CuratorFrameworkImpl client)
         {
             this.client = client;
         }
@@ -23,17 +21,21 @@ namespace Org.Apache.CuratorNet.Framework.Imps
             map.Clear();
         }
 
-        NamespaceWatcher get(Object key)
+        internal NamespaceWatcher get(Object key)
         {
+            WeakReference<NamespaceWatcher> weakValue;
+            map.TryGetValue(key, out weakValue);
             NamespaceWatcher value;
-            map.TryGetValue(key, out value);
+            weakValue.TryGetTarget(out value);
             return value;
         }
 
-        NamespaceWatcher remove(Object key)
+        internal NamespaceWatcher remove(Object key)
         {
+            WeakReference<NamespaceWatcher> weakValue;
+            map.TryRemove(key,out weakValue);
             NamespaceWatcher value;
-            map.TryRemove(key,out value);
+            weakValue.TryGetTarget(out value);
             return value;
         }
 
@@ -42,20 +44,23 @@ namespace Org.Apache.CuratorNet.Framework.Imps
             return map.IsEmpty;
         }
 
-        NamespaceWatcher getNamespaceWatcher(Watcher watcher)
+        internal NamespaceWatcher getNamespaceWatcher(Watcher watcher)
         {
             return get(watcher, new NamespaceWatcher(client, watcher));
         }
 
-        NamespaceWatcher getNamespaceWatcher(CuratorWatcher watcher)
+        internal NamespaceWatcher getNamespaceWatcher(CuratorWatcher watcher)
         {
             return get(watcher, new NamespaceWatcher(client, watcher));
         }
 
         private NamespaceWatcher get(Object watcher, NamespaceWatcher newNamespaceWatcher)
         {
-            NamespaceWatcher existingNamespaceWatcher = map.GetOrAdd(watcher, newNamespaceWatcher);
-            return (existingNamespaceWatcher != null) ? existingNamespaceWatcher : newNamespaceWatcher;
+            var weakReference = new WeakReference<NamespaceWatcher>(newNamespaceWatcher);
+            WeakReference<NamespaceWatcher> weakExistingValue = map.GetOrAdd(watcher, weakReference);
+            NamespaceWatcher existingNamespaceWatcher;
+            weakExistingValue.TryGetTarget(out existingNamespaceWatcher);
+            return existingNamespaceWatcher ?? newNamespaceWatcher;
         }
     }
 }
