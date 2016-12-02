@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Moq;
 using NUnit.Framework;
 using org.apache.zookeeper;
@@ -10,8 +11,8 @@ namespace CuratorNet.Client.Tests
     [TestFixture]
     public class TestRetryLoop : BaseZkTest
     {
-        public TestRetryLoop() 
-            : base(ZkDefaultHosts, DefaultSessionTimeout, null, false) {}
+        public TestRetryLoop()
+            : base(ZkDefaultHosts, DefaultSessionTimeout, null, false) { }
 
         public class RetrySleeper : IRetrySleeper
         {
@@ -26,7 +27,7 @@ namespace CuratorNet.Client.Tests
         {
             IRetrySleeper sleeper = new RetrySleeper();
             ExponentialBackoffRetry retry = new ExponentialBackoffRetry(1, Int32.MaxValue, 100);
-            for ( int i = 0; i >= 0; ++i )
+            for (int i = 0; i >= 0; ++i)
             {
                 retry.allowRetry(i, 0, sleeper);
             }
@@ -35,45 +36,45 @@ namespace CuratorNet.Client.Tests
         [Test]
         public void testRetryLoopWithFailure()
         {
-            CuratorZookeeperClient client = new CuratorZookeeperClient(ZkDefaultHosts, 
-                                                                        DefaultSessionTimeout, 
-                                                                        DefaultConnectionTimeout, 
-                                                                        null, 
+            CuratorZookeeperClient client = new CuratorZookeeperClient(ZkDefaultHosts,
+                                                                        DefaultSessionTimeout,
+                                                                        DefaultConnectionTimeout,
+                                                                        null,
                                                                         new RetryOneTime(1));
             client.start();
             try
             {
                 int loopCount = 0;
                 RetryLoop retryLoop = client.newRetryLoop();
-                while ( retryLoop.shouldContinue()  )
+                while (retryLoop.shouldContinue())
                 {
                     ++loopCount;
-                    switch ( loopCount )
+                    switch (loopCount)
                     {
                         case 1:
-                        {
-//                            retryLoop.takeException();
-                            break;
-                        }
+                            {
+                                //                            retryLoop.takeException();
+                                break;
+                            }
 
                         case 2:
-                        {
-                            retryLoop.markComplete();
-                            break;
-                        }
+                            {
+                                retryLoop.markComplete();
+                                break;
+                            }
 
                         case 3:
                         case 4:
-                        {
-                            // ignore
-                            break;
-                        }
+                            {
+                                // ignore
+                                break;
+                            }
 
                         default:
-                        {
-                            Assert.Fail();
-                            break;
-                        }
+                            {
+                                Assert.Fail();
+                                break;
+                            }
                     }
                 }
 
@@ -86,21 +87,21 @@ namespace CuratorNet.Client.Tests
         }
 
         [Test]
-        public void testRetryLoop()
+        public async Task testRetryLoop()
         {
-            CuratorZookeeperClient client = new CuratorZookeeperClient(ZkDefaultHosts, 
-                                                                        DefaultSessionTimeout, 
-                                                                        DefaultConnectionTimeout, 
-                                                                        null, 
+            CuratorZookeeperClient client = new CuratorZookeeperClient(ZkDefaultHosts,
+                                                                        DefaultSessionTimeout,
+                                                                        DefaultConnectionTimeout,
+                                                                        null,
                                                                         new RetryOneTime(1));
             client.start();
             try
             {
                 int loopCount = 0;
                 RetryLoop retryLoop = client.newRetryLoop();
-                while ( retryLoop.shouldContinue()  )
+                while (retryLoop.shouldContinue())
                 {
-                    if ( ++loopCount > 2 )
+                    if (++loopCount > 2)
                     {
                         Assert.Fail();
                         break;
@@ -108,14 +109,20 @@ namespace CuratorNet.Client.Tests
 
                     try
                     {
-                        client.getZooKeeper().createAsync("/test", 
-                                                            new byte[]{1,2,3}, 
-                                                            ZooDefs.Ids.OPEN_ACL_UNSAFE, 
+                        var path = "/test";
+                        if (await client.getZooKeeper().existsAsync(path, false) != null)
+                        {
+                            client.getZooKeeper().deleteAsync(path).Wait();
+                        }
+
+                        client.getZooKeeper().createAsync(path,
+                                                            new byte[] { 1, 2, 3 },
+                                                            ZooDefs.Ids.OPEN_ACL_UNSAFE,
                                                             CreateMode.EPHEMERAL)
                                              .Wait();
                         retryLoop.markComplete();
                     }
-                    catch ( Exception e )
+                    catch (Exception e)
                     {
                         retryLoop.takeException(e);
                     }
@@ -136,12 +143,12 @@ namespace CuratorNet.Client.Tests
             Mock<IRetrySleeper> sleeper = new Mock<IRetrySleeper>();
             RetryForever retryForever = new RetryForever(retryIntervalMs);
 
-            for (int i = 0; i< 10; i++)
+            for (int i = 0; i < 10; i++)
             {
                 bool allowed = retryForever.allowRetry(i, 0, sleeper.Object);
                 Assert.True(allowed);
                 sleeper.Verify(retrySleeper => retrySleeper.sleepFor(retryIntervalMs),
-                                Times.Exactly(i+1));
+                                Times.Exactly(i + 1));
             }
         }
     }

@@ -5,7 +5,7 @@ namespace CuratorNet.Client.Tests
 {
     public class BaseZkTest
     {
-        public const string ZkDefaultHosts = "172.16.5.170:2181,172.16.5.178:2181,172.16.5.196:2181";
+        public const string ZkDefaultHosts = "10.5.20.30:2181";
         public const int DefaultSessionTimeout = 5000;
         public const int DefaultConnectionTimeout = 5000;
         public static Watcher DefaultWatcher => new NopWatcher();
